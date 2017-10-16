@@ -816,6 +816,9 @@ JPEG_DELEGATE_TRUE
 JBIG_LIBS
 JBIG_DELEGATE_FALSE
 JBIG_DELEGATE_TRUE
+HEIC_LIBS
+HEIC_DELEGATE_FALSE
+HEIC_DELEGATE_TRUE
 GVC_DELEGATE_FALSE
 GVC_DELEGATE_TRUE
 GVC_LIBS
@@ -968,10 +971,6 @@ OLE_LIBS
 GDI32_LIBS
 HAVE_LD_VERSION_SCRIPT_FALSE
 HAVE_LD_VERSION_SCRIPT_TRUE
-WARN_SCANNERFLAGS
-WARN_LDFLAGS
-WARN_CXXFLAGS
-WARN_CFLAGS
 PKG_CONFIG_LIBDIR
 PKG_CONFIG_PATH
 PKG_CONFIG
@@ -1148,8 +1147,6 @@ enable_dependency_tracking
 with_gnu_ld
 with_dmalloc
 with_gcc_arch
-enable_compile_warnings
-enable_Werror
 enable_ld_version_script
 enable_bounds_checking
 enable_osx_universal_binary
@@ -1213,6 +1210,7 @@ with_gslib
 with_fontpath
 with_gs_font_dir
 with_gvc
+with_heic
 with_jbig
 with_jpeg
 with_lcms
@@ -1919,9 +1917,6 @@ Optional Features:
                           do not reject slow dependency extractors
   --disable-dependency-tracking
                           speeds up one-time build
-  --enable-compile-warnings=[no/yes/error]
-                          Enable compiler warnings and errors
-  --disable-Werror        Unconditionally make all compiler warnings non-fatal
   --enable-ld-version-script
                           enable linker version script (default is enabled
                           when possible)
@@ -2019,6 +2014,7 @@ Optional Packages:
   --with-fontpath=DIR     prepend to default font search path
   --with-gs-font-dir=DIR  Ghostscript font directory
   --with-gvc              enable GVC support
+  --without-heic          disable HEIC support
   --without-jbig          disable JBIG support
   --without-jpeg          disable JPEG support
   --without-lcms          disable lcms (v1.1X) support
@@ -3734,7 +3730,7 @@ test -n "$target_alias" &&
   program_prefix=${target_alias}-
 
 
-am__api_version='1.15'
+am__api_version='1.14'
 
 # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or
@@ -3906,8 +3902,8 @@ test "$program_suffix" != NONE &&
 ac_script='s/[\\$]/&&/g;s/;s,x,x,$//'
 program_transform_name=`$as_echo "$program_transform_name" | sed "$ac_script"`
 
-# Expand $ac_aux_dir to an absolute path.
-am_aux_dir=`cd "$ac_aux_dir" && pwd`
+# expand $ac_aux_dir to an absolute path
+am_aux_dir=`cd $ac_aux_dir && pwd`
 
 if test x"${MISSING+set}" != xset; then
   case $am_aux_dir in
@@ -3926,7 +3922,7 @@ else
 $as_echo "$as_me: WARNING: 'missing' script is too old or missing" >&2;}
 fi
 
-if test x"${install_sh+set}" != xset; then
+if test x"${install_sh}" != xset; then
   case $am_aux_dir in
   *\ * | *\	*)
     install_sh="\${SHELL} '$am_aux_dir/install-sh'" ;;
@@ -4254,8 +4250,8 @@ MAKEINFO=${MAKEINFO-"${am_missing_run}makeinfo"}
 # <http://lists.gnu.org/archive/html/automake/2012-07/msg00014.html>
 mkdir_p='$(MKDIR_P)'
 
-# We need awk for the "check" target (and possibly the TAP driver).  The
-# system "awk" is bad on some platforms.
+# We need awk for the "check" target.  The system "awk" is bad on
+# some platforms.
 # Always define AMTAR for backward compatibility.  Yes, it's still used
 # in the wild :-(  We should find a proper way to deprecate it ...
 AMTAR='$${TAR-tar}'
@@ -4428,7 +4424,6 @@ END
     as_fn_error $? "Your 'rm' program is bad, sorry." "$LINENO" 5
   fi
 fi
-
 # Check whether --enable-silent-rules was given.
 if test "${enable_silent_rules+set}" = set; then :
   enableval=$enable_silent_rules;
@@ -4534,7 +4529,7 @@ MAGICK_PATCHLEVEL_VERSION=9
 
 MAGICK_VERSION=7.0.7-9
 
-MAGICK_GIT_REVISION=21510:2c0cfb63f:20171015
+MAGICK_GIT_REVISION=
 
 
 # Substitute library versioning
@@ -9436,1561 +9431,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_c_compiler_vendor" >&5
 $as_echo "$ax_cv_c_compiler_vendor" >&6; }
 
-
-
-    # C support is enabled by default.
-
-
-    # Only enable C++ support if AC_PROG_CXX is called. The redefinition of
-    # AC_PROG_CXX is so that a fatal error is emitted if this macro is called
-    # before AC_PROG_CXX, which would otherwise cause no C++ warnings to be
-    # checked.
-
-
-
-
-
-    # Default value for IS-RELEASE is $ax_is_release
-    ax_compiler_flags_is_release=$ax_is_release
-
-    # Check whether --enable-compile-warnings was given.
-if test "${enable_compile_warnings+set}" = set; then :
-  enableval=$enable_compile_warnings;
-else
-  if test "$ax_compiler_flags_is_release" = "yes"; then :
-  enable_compile_warnings="yes"
-else
-  enable_compile_warnings="error"
-fi
-fi
-
-    # Check whether --enable-Werror was given.
-if test "${enable_Werror+set}" = set; then :
-  enableval=$enable_Werror;
-else
-  enable_Werror=maybe
-fi
-
-
-    # Return the user's chosen warning level
-    if test "$enable_Werror" = "no" -a \
-                "$enable_compile_warnings" = "error"; then :
-
-        enable_compile_warnings="yes"
-
-fi
-
-    ax_enable_compile_warnings=$enable_compile_warnings
-
-
-
-
-
-
-
-
-
-
-    # Variable names
-
-
-    ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
-
-
-    # Always pass -Werror=unknown-warning-option to get Clang to fail on bad
-    # flags, otherwise they are always appended to the warn_cflags variable, and
-    # Clang warns on them for every compilation unit.
-    # If this is passed to GCC, it will explode, so the flag must be enabled
-    # conditionally.
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -Werror=unknown-warning-option" >&5
-$as_echo_n "checking whether C compiler accepts -Werror=unknown-warning-option... " >&6; }
-if ${ax_cv_check_cflags___Werror_unknown_warning_option+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$CFLAGS
-  CFLAGS="$CFLAGS  -Werror=unknown-warning-option"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ax_cv_check_cflags___Werror_unknown_warning_option=yes
-else
-  ax_cv_check_cflags___Werror_unknown_warning_option=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  CFLAGS=$ax_check_save_flags
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cflags___Werror_unknown_warning_option" >&5
-$as_echo "$ax_cv_check_cflags___Werror_unknown_warning_option" >&6; }
-if test "x$ax_cv_check_cflags___Werror_unknown_warning_option" = xyes; then :
-
-        ax_compiler_flags_test="-Werror=unknown-warning-option"
-
-else
-
-        ax_compiler_flags_test=""
-
-fi
-
-
-    # Check that -Wno-suggest-attribute=format is supported
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -Wno-suggest-attribute=format" >&5
-$as_echo_n "checking whether C compiler accepts -Wno-suggest-attribute=format... " >&6; }
-if ${ax_cv_check_cflags___Wno_suggest_attribute_format+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$CFLAGS
-  CFLAGS="$CFLAGS  -Wno-suggest-attribute=format"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ax_cv_check_cflags___Wno_suggest_attribute_format=yes
-else
-  ax_cv_check_cflags___Wno_suggest_attribute_format=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  CFLAGS=$ax_check_save_flags
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cflags___Wno_suggest_attribute_format" >&5
-$as_echo "$ax_cv_check_cflags___Wno_suggest_attribute_format" >&6; }
-if test "x$ax_cv_check_cflags___Wno_suggest_attribute_format" = xyes; then :
-
-        ax_compiler_no_suggest_attribute_flags="-Wno-suggest-attribute=format"
-
-else
-
-        ax_compiler_no_suggest_attribute_flags=""
-
-fi
-
-
-    # Base flags
-
-
-
-
-for flag in          -fno-strict-aliasing              ; do
-  as_CACHEVAR=`$as_echo "ax_cv_check_cflags_$ax_compiler_flags_test_$flag" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts $flag" >&5
-$as_echo_n "checking whether C compiler accepts $flag... " >&6; }
-if eval \${$as_CACHEVAR+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$CFLAGS
-  CFLAGS="$CFLAGS $ax_compiler_flags_test $flag"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  eval "$as_CACHEVAR=yes"
-else
-  eval "$as_CACHEVAR=no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  CFLAGS=$ax_check_save_flags
-fi
-eval ac_res=\$$as_CACHEVAR
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_CACHEVAR"\" = x"yes"; then :
-
-if ${WARN_CFLAGS+:} false; then :
-
-  case " $WARN_CFLAGS " in #(
-  *" $flag "*) :
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CFLAGS already contains \$flag"; } >&5
-  (: WARN_CFLAGS already contains $flag) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } ;; #(
-  *) :
-
-     as_fn_append WARN_CFLAGS " $flag"
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CFLAGS=\"\$WARN_CFLAGS\""; } >&5
-  (: WARN_CFLAGS="$WARN_CFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-     ;;
-esac
-
-else
-
-  WARN_CFLAGS=$flag
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CFLAGS=\"\$WARN_CFLAGS\""; } >&5
-  (: WARN_CFLAGS="$WARN_CFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-
-fi
-
-else
-  :
-fi
-
-done
-
-
-    if test "$ax_enable_compile_warnings" != "no"; then :
-
-        # "yes" flags
-
-
-
-
-for flag in              -Wall             -Wextra             -Wundef             -Wnested-externs             -Wwrite-strings             -Wpointer-arith             -Wmissing-declarations             -Wmissing-prototypes             -Wstrict-prototypes             -Wredundant-decls             -Wno-unused-parameter             -Wno-missing-field-initializers             -Wdeclaration-after-statement             -Wformat=2             -Wold-style-definition             -Wcast-align             -Wformat-nonliteral             -Wformat-security             -Wsign-compare             -Wstrict-aliasing             -Wshadow             -Winline             -Wpacked             -Wmissing-format-attribute             -Wmissing-noreturn             -Winit-self             -Wredundant-decls             -Wmissing-include-dirs             -Wunused-but-set-variable             -Warray-bounds             -Wimplicit-function-declaration             -Wreturn-type             -Wswitch-enum             -Wswitch-default                                                                ; do
-  as_CACHEVAR=`$as_echo "ax_cv_check_cflags_$ax_compiler_flags_test_$flag" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts $flag" >&5
-$as_echo_n "checking whether C compiler accepts $flag... " >&6; }
-if eval \${$as_CACHEVAR+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$CFLAGS
-  CFLAGS="$CFLAGS $ax_compiler_flags_test $flag"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  eval "$as_CACHEVAR=yes"
-else
-  eval "$as_CACHEVAR=no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  CFLAGS=$ax_check_save_flags
-fi
-eval ac_res=\$$as_CACHEVAR
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_CACHEVAR"\" = x"yes"; then :
-
-if ${WARN_CFLAGS+:} false; then :
-
-  case " $WARN_CFLAGS " in #(
-  *" $flag "*) :
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CFLAGS already contains \$flag"; } >&5
-  (: WARN_CFLAGS already contains $flag) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } ;; #(
-  *) :
-
-     as_fn_append WARN_CFLAGS " $flag"
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CFLAGS=\"\$WARN_CFLAGS\""; } >&5
-  (: WARN_CFLAGS="$WARN_CFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-     ;;
-esac
-
-else
-
-  WARN_CFLAGS=$flag
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CFLAGS=\"\$WARN_CFLAGS\""; } >&5
-  (: WARN_CFLAGS="$WARN_CFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-
-fi
-
-else
-  :
-fi
-
-done
-
-
-fi
-    if test "$ax_enable_compile_warnings" = "error"; then :
-
-        # "error" flags; -Werror has to be appended unconditionally because
-        # it's not possible to test for
-        #
-        # suggest-attribute=format is disabled because it gives too many false
-        # positives
-
-if ${WARN_CFLAGS+:} false; then :
-
-  case " $WARN_CFLAGS " in #(
-  *" -Werror "*) :
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CFLAGS already contains -Werror"; } >&5
-  (: WARN_CFLAGS already contains -Werror) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } ;; #(
-  *) :
-
-     as_fn_append WARN_CFLAGS " -Werror"
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CFLAGS=\"\$WARN_CFLAGS\""; } >&5
-  (: WARN_CFLAGS="$WARN_CFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-     ;;
-esac
-
-else
-
-  WARN_CFLAGS=-Werror
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CFLAGS=\"\$WARN_CFLAGS\""; } >&5
-  (: WARN_CFLAGS="$WARN_CFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-
-fi
-
-
-
-
-
-
-for flag in              $ax_compiler_no_suggest_attribute_flags         ; do
-  as_CACHEVAR=`$as_echo "ax_cv_check_cflags_$ax_compiler_flags_test_$flag" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts $flag" >&5
-$as_echo_n "checking whether C compiler accepts $flag... " >&6; }
-if eval \${$as_CACHEVAR+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$CFLAGS
-  CFLAGS="$CFLAGS $ax_compiler_flags_test $flag"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  eval "$as_CACHEVAR=yes"
-else
-  eval "$as_CACHEVAR=no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  CFLAGS=$ax_check_save_flags
-fi
-eval ac_res=\$$as_CACHEVAR
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_CACHEVAR"\" = x"yes"; then :
-
-if ${WARN_CFLAGS+:} false; then :
-
-  case " $WARN_CFLAGS " in #(
-  *" $flag "*) :
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CFLAGS already contains \$flag"; } >&5
-  (: WARN_CFLAGS already contains $flag) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } ;; #(
-  *) :
-
-     as_fn_append WARN_CFLAGS " $flag"
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CFLAGS=\"\$WARN_CFLAGS\""; } >&5
-  (: WARN_CFLAGS="$WARN_CFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-     ;;
-esac
-
-else
-
-  WARN_CFLAGS=$flag
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CFLAGS=\"\$WARN_CFLAGS\""; } >&5
-  (: WARN_CFLAGS="$WARN_CFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-
-fi
-
-else
-  :
-fi
-
-done
-
-
-fi
-
-    # In the flags below, when disabling specific flags, always add *both*
-    # -Wno-foo and -Wno-error=foo. This fixes the situation where (for example)
-    # we enable -Werror, disable a flag, and a build bot passes CFLAGS=-Wall,
-    # which effectively turns that flag back on again as an error.
-    for flag in $WARN_CFLAGS; do
-        case $flag in #(
-  -Wno-*=*) :
-     ;; #(
-  -Wno-*) :
-
-
-
-
-
-for flag in -Wno-error=$($as_echo $flag | $SED 's/^-Wno-//'); do
-  as_CACHEVAR=`$as_echo "ax_cv_check_cflags_$ax_compiler_flags_test_$flag" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts $flag" >&5
-$as_echo_n "checking whether C compiler accepts $flag... " >&6; }
-if eval \${$as_CACHEVAR+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$CFLAGS
-  CFLAGS="$CFLAGS $ax_compiler_flags_test $flag"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  eval "$as_CACHEVAR=yes"
-else
-  eval "$as_CACHEVAR=no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  CFLAGS=$ax_check_save_flags
-fi
-eval ac_res=\$$as_CACHEVAR
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_CACHEVAR"\" = x"yes"; then :
-
-if ${WARN_CFLAGS+:} false; then :
-
-  case " $WARN_CFLAGS " in #(
-  *" $flag "*) :
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CFLAGS already contains \$flag"; } >&5
-  (: WARN_CFLAGS already contains $flag) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } ;; #(
-  *) :
-
-     as_fn_append WARN_CFLAGS " $flag"
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CFLAGS=\"\$WARN_CFLAGS\""; } >&5
-  (: WARN_CFLAGS="$WARN_CFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-     ;;
-esac
-
-else
-
-  WARN_CFLAGS=$flag
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CFLAGS=\"\$WARN_CFLAGS\""; } >&5
-  (: WARN_CFLAGS="$WARN_CFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-
-fi
-
-else
-  :
-fi
-
-done
-
-                 ;; #(
-  *) :
-     ;;
-esac
-    done
-
-    ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
-
-
-    # Substitute the variables
-
-
-
-
-
-
-
-
-
-
-
-    # Variable names
-
-
-    ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
-
-    # Always pass -Werror=unknown-warning-option to get Clang to fail on bad
-    # flags, otherwise they are always appended to the warn_cxxflags variable,
-    # and Clang warns on them for every compilation unit.
-    # If this is passed to GCC, it will explode, so the flag must be enabled
-    # conditionally.
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ compiler accepts -Werror=unknown-warning-option" >&5
-$as_echo_n "checking whether C++ compiler accepts -Werror=unknown-warning-option... " >&6; }
-if ${ax_cv_check_cxxflags___Werror_unknown_warning_option+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$CXXFLAGS
-  CXXFLAGS="$CXXFLAGS  -Werror=unknown-warning-option"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-  ax_cv_check_cxxflags___Werror_unknown_warning_option=yes
-else
-  ax_cv_check_cxxflags___Werror_unknown_warning_option=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  CXXFLAGS=$ax_check_save_flags
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cxxflags___Werror_unknown_warning_option" >&5
-$as_echo "$ax_cv_check_cxxflags___Werror_unknown_warning_option" >&6; }
-if test "x$ax_cv_check_cxxflags___Werror_unknown_warning_option" = xyes; then :
-
-        ax_compiler_flags_test="-Werror=unknown-warning-option"
-
-else
-
-        ax_compiler_flags_test=""
-
-fi
-
-
-    # Check that -Wno-suggest-attribute=format is supported
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ compiler accepts -Wno-suggest-attribute=format" >&5
-$as_echo_n "checking whether C++ compiler accepts -Wno-suggest-attribute=format... " >&6; }
-if ${ax_cv_check_cxxflags___Wno_suggest_attribute_format+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$CXXFLAGS
-  CXXFLAGS="$CXXFLAGS  -Wno-suggest-attribute=format"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-  ax_cv_check_cxxflags___Wno_suggest_attribute_format=yes
-else
-  ax_cv_check_cxxflags___Wno_suggest_attribute_format=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  CXXFLAGS=$ax_check_save_flags
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cxxflags___Wno_suggest_attribute_format" >&5
-$as_echo "$ax_cv_check_cxxflags___Wno_suggest_attribute_format" >&6; }
-if test "x$ax_cv_check_cxxflags___Wno_suggest_attribute_format" = xyes; then :
-
-        ax_compiler_no_suggest_attribute_flags="-Wno-suggest-attribute=format"
-
-else
-
-        ax_compiler_no_suggest_attribute_flags=""
-
-fi
-
-
-    # Base flags
-
-
-
-
-for flag in          -fno-strict-aliasing              ; do
-  as_CACHEVAR=`$as_echo "ax_cv_check_cxxflags_$ax_compiler_flags_test_$flag" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ compiler accepts $flag" >&5
-$as_echo_n "checking whether C++ compiler accepts $flag... " >&6; }
-if eval \${$as_CACHEVAR+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$CXXFLAGS
-  CXXFLAGS="$CXXFLAGS $ax_compiler_flags_test $flag"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-  eval "$as_CACHEVAR=yes"
-else
-  eval "$as_CACHEVAR=no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  CXXFLAGS=$ax_check_save_flags
-fi
-eval ac_res=\$$as_CACHEVAR
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_CACHEVAR"\" = x"yes"; then :
-
-if ${WARN_CXXFLAGS+:} false; then :
-
-  case " $WARN_CXXFLAGS " in #(
-  *" $flag "*) :
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CXXFLAGS already contains \$flag"; } >&5
-  (: WARN_CXXFLAGS already contains $flag) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } ;; #(
-  *) :
-
-     as_fn_append WARN_CXXFLAGS " $flag"
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CXXFLAGS=\"\$WARN_CXXFLAGS\""; } >&5
-  (: WARN_CXXFLAGS="$WARN_CXXFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-     ;;
-esac
-
-else
-
-  WARN_CXXFLAGS=$flag
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CXXFLAGS=\"\$WARN_CXXFLAGS\""; } >&5
-  (: WARN_CXXFLAGS="$WARN_CXXFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-
-fi
-
-else
-  :
-fi
-
-done
-
-
-    if test "$ax_enable_compile_warnings" != "no"; then :
-
-        # "yes" flags
-
-
-
-
-for flag in              -Wall             -Wextra             -Wundef             -Wwrite-strings             -Wpointer-arith             -Wmissing-declarations             -Wredundant-decls             -Wno-unused-parameter             -Wno-missing-field-initializers             -Wformat=2             -Wcast-align             -Wformat-nonliteral             -Wformat-security             -Wsign-compare             -Wstrict-aliasing             -Wshadow             -Winline             -Wpacked             -Wmissing-format-attribute             -Wmissing-noreturn             -Winit-self             -Wredundant-decls             -Wmissing-include-dirs             -Wunused-but-set-variable             -Warray-bounds             -Wreturn-type             -Wno-overloaded-virtual             -Wswitch-enum             -Wswitch-default                                                                ; do
-  as_CACHEVAR=`$as_echo "ax_cv_check_cxxflags_$ax_compiler_flags_test_$flag" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ compiler accepts $flag" >&5
-$as_echo_n "checking whether C++ compiler accepts $flag... " >&6; }
-if eval \${$as_CACHEVAR+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$CXXFLAGS
-  CXXFLAGS="$CXXFLAGS $ax_compiler_flags_test $flag"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-  eval "$as_CACHEVAR=yes"
-else
-  eval "$as_CACHEVAR=no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  CXXFLAGS=$ax_check_save_flags
-fi
-eval ac_res=\$$as_CACHEVAR
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_CACHEVAR"\" = x"yes"; then :
-
-if ${WARN_CXXFLAGS+:} false; then :
-
-  case " $WARN_CXXFLAGS " in #(
-  *" $flag "*) :
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CXXFLAGS already contains \$flag"; } >&5
-  (: WARN_CXXFLAGS already contains $flag) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } ;; #(
-  *) :
-
-     as_fn_append WARN_CXXFLAGS " $flag"
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CXXFLAGS=\"\$WARN_CXXFLAGS\""; } >&5
-  (: WARN_CXXFLAGS="$WARN_CXXFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-     ;;
-esac
-
-else
-
-  WARN_CXXFLAGS=$flag
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CXXFLAGS=\"\$WARN_CXXFLAGS\""; } >&5
-  (: WARN_CXXFLAGS="$WARN_CXXFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-
-fi
-
-else
-  :
-fi
-
-done
-
-
-fi
-    if test "$ax_enable_compile_warnings" = "error"; then :
-
-        # "error" flags; -Werror has to be appended unconditionally because
-        # it's not possible to test for
-        #
-        # suggest-attribute=format is disabled because it gives too many false
-        # positives
-
-if ${WARN_CXXFLAGS+:} false; then :
-
-  case " $WARN_CXXFLAGS " in #(
-  *" -Werror "*) :
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CXXFLAGS already contains -Werror"; } >&5
-  (: WARN_CXXFLAGS already contains -Werror) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } ;; #(
-  *) :
-
-     as_fn_append WARN_CXXFLAGS " -Werror"
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CXXFLAGS=\"\$WARN_CXXFLAGS\""; } >&5
-  (: WARN_CXXFLAGS="$WARN_CXXFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-     ;;
-esac
-
-else
-
-  WARN_CXXFLAGS=-Werror
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CXXFLAGS=\"\$WARN_CXXFLAGS\""; } >&5
-  (: WARN_CXXFLAGS="$WARN_CXXFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-
-fi
-
-
-
-
-
-
-for flag in              $ax_compiler_no_suggest_attribute_flags         ; do
-  as_CACHEVAR=`$as_echo "ax_cv_check_cxxflags_$ax_compiler_flags_test_$flag" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ compiler accepts $flag" >&5
-$as_echo_n "checking whether C++ compiler accepts $flag... " >&6; }
-if eval \${$as_CACHEVAR+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$CXXFLAGS
-  CXXFLAGS="$CXXFLAGS $ax_compiler_flags_test $flag"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-  eval "$as_CACHEVAR=yes"
-else
-  eval "$as_CACHEVAR=no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  CXXFLAGS=$ax_check_save_flags
-fi
-eval ac_res=\$$as_CACHEVAR
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_CACHEVAR"\" = x"yes"; then :
-
-if ${WARN_CXXFLAGS+:} false; then :
-
-  case " $WARN_CXXFLAGS " in #(
-  *" $flag "*) :
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CXXFLAGS already contains \$flag"; } >&5
-  (: WARN_CXXFLAGS already contains $flag) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } ;; #(
-  *) :
-
-     as_fn_append WARN_CXXFLAGS " $flag"
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CXXFLAGS=\"\$WARN_CXXFLAGS\""; } >&5
-  (: WARN_CXXFLAGS="$WARN_CXXFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-     ;;
-esac
-
-else
-
-  WARN_CXXFLAGS=$flag
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CXXFLAGS=\"\$WARN_CXXFLAGS\""; } >&5
-  (: WARN_CXXFLAGS="$WARN_CXXFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-
-fi
-
-else
-  :
-fi
-
-done
-
-
-fi
-
-    # In the flags below, when disabling specific flags, always add *both*
-    # -Wno-foo and -Wno-error=foo. This fixes the situation where (for example)
-    # we enable -Werror, disable a flag, and a build bot passes CXXFLAGS=-Wall,
-    # which effectively turns that flag back on again as an error.
-    for flag in $WARN_CXXFLAGS; do
-        case $flag in #(
-  -Wno-*=*) :
-     ;; #(
-  -Wno-*) :
-
-
-
-
-
-for flag in -Wno-error=$($as_echo $flag | $SED 's/^-Wno-//'); do
-  as_CACHEVAR=`$as_echo "ax_cv_check_cxxflags_$ax_compiler_flags_test_$flag" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ compiler accepts $flag" >&5
-$as_echo_n "checking whether C++ compiler accepts $flag... " >&6; }
-if eval \${$as_CACHEVAR+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$CXXFLAGS
-  CXXFLAGS="$CXXFLAGS $ax_compiler_flags_test $flag"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-  eval "$as_CACHEVAR=yes"
-else
-  eval "$as_CACHEVAR=no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  CXXFLAGS=$ax_check_save_flags
-fi
-eval ac_res=\$$as_CACHEVAR
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_CACHEVAR"\" = x"yes"; then :
-
-if ${WARN_CXXFLAGS+:} false; then :
-
-  case " $WARN_CXXFLAGS " in #(
-  *" $flag "*) :
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CXXFLAGS already contains \$flag"; } >&5
-  (: WARN_CXXFLAGS already contains $flag) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } ;; #(
-  *) :
-
-     as_fn_append WARN_CXXFLAGS " $flag"
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CXXFLAGS=\"\$WARN_CXXFLAGS\""; } >&5
-  (: WARN_CXXFLAGS="$WARN_CXXFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-     ;;
-esac
-
-else
-
-  WARN_CXXFLAGS=$flag
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_CXXFLAGS=\"\$WARN_CXXFLAGS\""; } >&5
-  (: WARN_CXXFLAGS="$WARN_CXXFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-
-fi
-
-else
-  :
-fi
-
-done
-
-                 ;; #(
-  *) :
-     ;;
-esac
-    done
-
-    ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
-
-
-    # Substitute the variables
-
-
-
-
-
-
-
-
-
-
-
-
-    # Variable names
-
-
-    # Always pass -Werror=unknown-warning-option to get Clang to fail on bad
-    # flags, otherwise they are always appended to the warn_ldflags variable,
-    # and Clang warns on them for every compilation unit.
-    # If this is passed to GCC, it will explode, so the flag must be enabled
-    # conditionally.
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -Werror=unknown-warning-option" >&5
-$as_echo_n "checking whether C compiler accepts -Werror=unknown-warning-option... " >&6; }
-if ${ax_cv_check_cflags___Werror_unknown_warning_option+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$CFLAGS
-  CFLAGS="$CFLAGS  -Werror=unknown-warning-option"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ax_cv_check_cflags___Werror_unknown_warning_option=yes
-else
-  ax_cv_check_cflags___Werror_unknown_warning_option=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  CFLAGS=$ax_check_save_flags
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cflags___Werror_unknown_warning_option" >&5
-$as_echo "$ax_cv_check_cflags___Werror_unknown_warning_option" >&6; }
-if test "x$ax_cv_check_cflags___Werror_unknown_warning_option" = xyes; then :
-
-        ax_compiler_flags_test="-Werror=unknown-warning-option"
-
-else
-
-        ax_compiler_flags_test=""
-
-fi
-
-
-    # macOS linker does not have --as-needed
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the linker accepts -Wl,--no-as-needed" >&5
-$as_echo_n "checking whether the linker accepts -Wl,--no-as-needed... " >&6; }
-if ${ax_cv_check_ldflags___Wl___no_as_needed+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$LDFLAGS
-  LDFLAGS="$LDFLAGS  -Wl,--no-as-needed"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ax_cv_check_ldflags___Wl___no_as_needed=yes
-else
-  ax_cv_check_ldflags___Wl___no_as_needed=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-  LDFLAGS=$ax_check_save_flags
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_ldflags___Wl___no_as_needed" >&5
-$as_echo "$ax_cv_check_ldflags___Wl___no_as_needed" >&6; }
-if test "x$ax_cv_check_ldflags___Wl___no_as_needed" = xyes; then :
-
-        ax_compiler_flags_as_needed_option="-Wl,--no-as-needed"
-
-else
-
-        ax_compiler_flags_as_needed_option=""
-
-fi
-
-
-    # macOS linker speaks with a different accent
-    ax_compiler_flags_fatal_warnings_option=""
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the linker accepts -Wl,--fatal-warnings" >&5
-$as_echo_n "checking whether the linker accepts -Wl,--fatal-warnings... " >&6; }
-if ${ax_cv_check_ldflags___Wl___fatal_warnings+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$LDFLAGS
-  LDFLAGS="$LDFLAGS  -Wl,--fatal-warnings"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ax_cv_check_ldflags___Wl___fatal_warnings=yes
-else
-  ax_cv_check_ldflags___Wl___fatal_warnings=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-  LDFLAGS=$ax_check_save_flags
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_ldflags___Wl___fatal_warnings" >&5
-$as_echo "$ax_cv_check_ldflags___Wl___fatal_warnings" >&6; }
-if test "x$ax_cv_check_ldflags___Wl___fatal_warnings" = xyes; then :
-
-        ax_compiler_flags_fatal_warnings_option="-Wl,--fatal-warnings"
-
-else
-  :
-fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the linker accepts -Wl,-fatal_warnings" >&5
-$as_echo_n "checking whether the linker accepts -Wl,-fatal_warnings... " >&6; }
-if ${ax_cv_check_ldflags___Wl__fatal_warnings+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$LDFLAGS
-  LDFLAGS="$LDFLAGS  -Wl,-fatal_warnings"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ax_cv_check_ldflags___Wl__fatal_warnings=yes
-else
-  ax_cv_check_ldflags___Wl__fatal_warnings=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-  LDFLAGS=$ax_check_save_flags
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_ldflags___Wl__fatal_warnings" >&5
-$as_echo "$ax_cv_check_ldflags___Wl__fatal_warnings" >&6; }
-if test "x$ax_cv_check_ldflags___Wl__fatal_warnings" = xyes; then :
-
-        ax_compiler_flags_fatal_warnings_option="-Wl,-fatal_warnings"
-
-else
-  :
-fi
-
-
-    # Base flags
-
-
-
-
-for flag in          $ax_compiler_flags_as_needed_option              ; do
-  as_CACHEVAR=`$as_echo "ax_cv_check_ldflags_$ax_compiler_flags_test_$flag" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the linker accepts $flag" >&5
-$as_echo_n "checking whether the linker accepts $flag... " >&6; }
-if eval \${$as_CACHEVAR+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$LDFLAGS
-  LDFLAGS="$LDFLAGS $ax_compiler_flags_test $flag"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  eval "$as_CACHEVAR=yes"
-else
-  eval "$as_CACHEVAR=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-  LDFLAGS=$ax_check_save_flags
-fi
-eval ac_res=\$$as_CACHEVAR
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_CACHEVAR"\" = x"yes"; then :
-
-if ${WARN_LDFLAGS+:} false; then :
-
-  case " $WARN_LDFLAGS " in #(
-  *" $flag "*) :
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_LDFLAGS already contains \$flag"; } >&5
-  (: WARN_LDFLAGS already contains $flag) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } ;; #(
-  *) :
-
-     as_fn_append WARN_LDFLAGS " $flag"
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_LDFLAGS=\"\$WARN_LDFLAGS\""; } >&5
-  (: WARN_LDFLAGS="$WARN_LDFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-     ;;
-esac
-
-else
-
-  WARN_LDFLAGS=$flag
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_LDFLAGS=\"\$WARN_LDFLAGS\""; } >&5
-  (: WARN_LDFLAGS="$WARN_LDFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-
-fi
-
-else
-  :
-fi
-
-done
-
-
-    if test "$ax_enable_compile_warnings" != "no"; then :
-
-        # "yes" flags
-
-
-
-
-for flag in       ; do
-  as_CACHEVAR=`$as_echo "ax_cv_check_ldflags_$ax_compiler_flags_test_$flag" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the linker accepts $flag" >&5
-$as_echo_n "checking whether the linker accepts $flag... " >&6; }
-if eval \${$as_CACHEVAR+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$LDFLAGS
-  LDFLAGS="$LDFLAGS $ax_compiler_flags_test $flag"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  eval "$as_CACHEVAR=yes"
-else
-  eval "$as_CACHEVAR=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-  LDFLAGS=$ax_check_save_flags
-fi
-eval ac_res=\$$as_CACHEVAR
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_CACHEVAR"\" = x"yes"; then :
-
-if ${WARN_LDFLAGS+:} false; then :
-
-  case " $WARN_LDFLAGS " in #(
-  *" $flag "*) :
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_LDFLAGS already contains \$flag"; } >&5
-  (: WARN_LDFLAGS already contains $flag) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } ;; #(
-  *) :
-
-     as_fn_append WARN_LDFLAGS " $flag"
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_LDFLAGS=\"\$WARN_LDFLAGS\""; } >&5
-  (: WARN_LDFLAGS="$WARN_LDFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-     ;;
-esac
-
-else
-
-  WARN_LDFLAGS=$flag
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_LDFLAGS=\"\$WARN_LDFLAGS\""; } >&5
-  (: WARN_LDFLAGS="$WARN_LDFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-
-fi
-
-else
-  :
-fi
-
-done
-
-
-fi
-    if test "$ax_enable_compile_warnings" = "error"; then :
-
-        # "error" flags; -Werror has to be appended unconditionally because
-        # it's not possible to test for
-        #
-        # suggest-attribute=format is disabled because it gives too many false
-        # positives
-
-
-
-
-for flag in              $ax_compiler_flags_fatal_warnings_option         ; do
-  as_CACHEVAR=`$as_echo "ax_cv_check_ldflags_$ax_compiler_flags_test_$flag" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the linker accepts $flag" >&5
-$as_echo_n "checking whether the linker accepts $flag... " >&6; }
-if eval \${$as_CACHEVAR+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$LDFLAGS
-  LDFLAGS="$LDFLAGS $ax_compiler_flags_test $flag"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  eval "$as_CACHEVAR=yes"
-else
-  eval "$as_CACHEVAR=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-  LDFLAGS=$ax_check_save_flags
-fi
-eval ac_res=\$$as_CACHEVAR
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_CACHEVAR"\" = x"yes"; then :
-
-if ${WARN_LDFLAGS+:} false; then :
-
-  case " $WARN_LDFLAGS " in #(
-  *" $flag "*) :
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_LDFLAGS already contains \$flag"; } >&5
-  (: WARN_LDFLAGS already contains $flag) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } ;; #(
-  *) :
-
-     as_fn_append WARN_LDFLAGS " $flag"
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_LDFLAGS=\"\$WARN_LDFLAGS\""; } >&5
-  (: WARN_LDFLAGS="$WARN_LDFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-     ;;
-esac
-
-else
-
-  WARN_LDFLAGS=$flag
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_LDFLAGS=\"\$WARN_LDFLAGS\""; } >&5
-  (: WARN_LDFLAGS="$WARN_LDFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-
-fi
-
-else
-  :
-fi
-
-done
-
-
-fi
-
-    # Substitute the variables
-
-
-
-
-
-
-    # Variable names
-
-
-    # Base flags
-
-if ${WARN_SCANNERFLAGS+:} false; then :
-
-  case " $WARN_SCANNERFLAGS " in #(
-  *"  "*) :
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_SCANNERFLAGS already contains "; } >&5
-  (: WARN_SCANNERFLAGS already contains ) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } ;; #(
-  *) :
-
-     as_fn_append WARN_SCANNERFLAGS " "
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_SCANNERFLAGS=\"\$WARN_SCANNERFLAGS\""; } >&5
-  (: WARN_SCANNERFLAGS="$WARN_SCANNERFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-     ;;
-esac
-
-else
-
-  WARN_SCANNERFLAGS=
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_SCANNERFLAGS=\"\$WARN_SCANNERFLAGS\""; } >&5
-  (: WARN_SCANNERFLAGS="$WARN_SCANNERFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-
-fi
-
-
-    if test "$ax_enable_compile_warnings" != "no"; then :
-
-        # "yes" flags
-
-if ${WARN_SCANNERFLAGS+:} false; then :
-
-  case " $WARN_SCANNERFLAGS " in #(
-  *"              --warn-all                                                              "*) :
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_SCANNERFLAGS already contains              --warn-all                                                             "; } >&5
-  (: WARN_SCANNERFLAGS already contains              --warn-all                                                             ) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } ;; #(
-  *) :
-
-     as_fn_append WARN_SCANNERFLAGS "              --warn-all                                                             "
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_SCANNERFLAGS=\"\$WARN_SCANNERFLAGS\""; } >&5
-  (: WARN_SCANNERFLAGS="$WARN_SCANNERFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-     ;;
-esac
-
-else
-
-  WARN_SCANNERFLAGS=             --warn-all
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_SCANNERFLAGS=\"\$WARN_SCANNERFLAGS\""; } >&5
-  (: WARN_SCANNERFLAGS="$WARN_SCANNERFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-
-fi
-
-
-fi
-    if test "$ax_enable_compile_warnings" = "error"; then :
-
-        # "error" flags
-
-if ${WARN_SCANNERFLAGS+:} false; then :
-
-  case " $WARN_SCANNERFLAGS " in #(
-  *"              --warn-error          "*) :
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_SCANNERFLAGS already contains              --warn-error         "; } >&5
-  (: WARN_SCANNERFLAGS already contains              --warn-error         ) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } ;; #(
-  *) :
-
-     as_fn_append WARN_SCANNERFLAGS "              --warn-error         "
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_SCANNERFLAGS=\"\$WARN_SCANNERFLAGS\""; } >&5
-  (: WARN_SCANNERFLAGS="$WARN_SCANNERFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-     ;;
-esac
-
-else
-
-  WARN_SCANNERFLAGS=             --warn-error
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: : WARN_SCANNERFLAGS=\"\$WARN_SCANNERFLAGS\""; } >&5
-  (: WARN_SCANNERFLAGS="$WARN_SCANNERFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-
-fi
-
-
-fi
-
-    # Substitute the variables
-
-
-
+AX_COMPILER_FLAGS
 # The AX_CFLAGS_WARN_ALL macro doesn't currently work for sunpro
 # compiler.
 if test "$ax_cv_c_compiler_vendor" != "sun"; then
@@ -13043,7 +11484,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -13089,7 +11530,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -13113,7 +11554,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -13158,7 +11599,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -13182,7 +11623,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -16297,6 +14738,7 @@ _ACEOF
 fi
 
 done
+
 
 
 
@@ -32849,6 +31291,116 @@ fi
 
 
 #
+# Check for HEIC delegate library.
+#
+
+# Check whether --with-heic was given.
+if test "${with_heic+set}" = set; then :
+  withval=$with_heic; with_heic=$withval
+else
+  with_heic='yes'
+fi
+
+
+if test "$with_heic" != 'yes'; then
+    DISTCHECK_CONFIG_FLAGS="${DISTCHECK_CONFIG_FLAGS} --with-heic=$with_heic "
+fi
+
+have_heic='no'
+HEIC_LIBS=''
+if test "$with_heic" != 'no'; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: -------------------------------------------------------------" >&5
+$as_echo "-------------------------------------------------------------" >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for HEIC" >&5
+$as_echo_n "checking for HEIC... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: " >&5
+$as_echo "" >&6; }
+    failed=0
+    passed=0
+    ac_fn_c_check_header_mongrel "$LINENO" "libde265/de265.h" "ac_cv_header_libde265_de265_h" "$ac_includes_default"
+if test "x$ac_cv_header_libde265_de265_h" = xyes; then :
+  passed=`expr $passed + 1`
+else
+  failed=`expr $failed + 1`
+fi
+
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for de265_get_version_number in -lde265" >&5
+$as_echo_n "checking for de265_get_version_number in -lde265... " >&6; }
+if ${ac_cv_lib_de265_de265_get_version_number+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lde265  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char de265_get_version_number ();
+int
+main ()
+{
+return de265_get_version_number ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_de265_de265_get_version_number=yes
+else
+  ac_cv_lib_de265_de265_get_version_number=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_de265_de265_get_version_number" >&5
+$as_echo "$ac_cv_lib_de265_de265_get_version_number" >&6; }
+if test "x$ac_cv_lib_de265_de265_get_version_number" = xyes; then :
+  passed=`expr $passed + 1`
+else
+  failed=`expr $failed + 1`
+fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking if HEIC package is complete" >&5
+$as_echo_n "checking if HEIC package is complete... " >&6; }
+    if test $passed -gt 0; then
+        if test $failed -gt 0; then
+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: no -- some components failed test" >&5
+$as_echo "no -- some components failed test" >&6; }
+            have_heic='no (failed tests)'
+        else
+            HEIC_LIBS='-lde265'
+            LIBS="$HEIC_LIBS $LIBS"
+
+$as_echo "#define HEIC_DELEGATE 1" >>confdefs.h
+
+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+            have_heic='yes'
+        fi
+    else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+    fi
+fi
+ if test "$have_heic" = 'yes'; then
+  HEIC_DELEGATE_TRUE=
+  HEIC_DELEGATE_FALSE='#'
+else
+  HEIC_DELEGATE_TRUE='#'
+  HEIC_DELEGATE_FALSE=
+fi
+
+
+
+
+#
 # Check for JBIG delegate library.
 #
 
@@ -37928,6 +36480,9 @@ fi
 if test "$have_gslib"    = 'yes' ; then
    MAGICK_DELEGATES="$MAGICK_DELEGATES gslib"
 fi
+if test "$have_heic"    = 'yes' ; then
+   MAGICK_DELEGATES="$MAGICK_DELEGATES heic"
+fi
 if test "$have_jbig"    = 'yes' ; then
    MAGICK_DELEGATES="$MAGICK_DELEGATES jbig"
 fi
@@ -38139,7 +36694,7 @@ fi
 if test "$build_modules" != 'no'; then
     MAGICK_DEP_LIBS="$USER_LIBS $LCMS_LIBS $FREETYPE_LIBS $RAQM_LIBS $LQR_LIBS $FFTW_LIBS $FLIF_LIBS $FONTCONFIG_LIBS $XEXT_LIBS $IPC_LIBS $X11_LIBS $XT_LIBS $LZMA_LIBS $BZLIB_LIBS $ZLIB_LIBS $LTDL_LIBS $GDI32_LIBS $MATH_LIBS $GOMP_LIBS $CL_LIBS $UMEM_LIBS $JEMALLOC_LIBS $THREAD_LIBS"
 else
-    MAGICK_DEP_LIBS="$USER_LIBS $JBIG_LIBS $LCMS_LIBS $TIFF_LIBS $FREETYPE_LIBS $RAQM_LIBS $JPEG_LIBS $GS_LIBS $LQR_LIBS $PNG_LIBS $AUTOTRACE_LIBS $DJVU_LIBS $FFTW_LIBS $FLIF_LIBS $FPX_LIBS $FONTCONFIG_LIBS $WEBP_LIBS $WMF_LIBS $DPS_LIBS $XEXT_LIBS $XT_LIBS $IPC_LIBS $X11_LIBS $LZMA_LIBS $BZLIB_LIBS $OPENEXR_LIBS $LIBOPENJP2_LIBS $PANGO_LIBS $RAW_R_LIBS $RSVG_LIBS $XML_LIBS $GVC_LIBS $ZLIB_LIBS $GDI32_LIBS $MATH_LIBS $GOMP_LIBS $CL_LIBS $UMEM_LIBS $JEMALLOC_LIBS $THREAD_LIBS"
+    MAGICK_DEP_LIBS="$USER_LIBS $JBIG_LIBS $LCMS_LIBS $TIFF_LIBS $FREETYPE_LIBS $RAQM_LIBS $JPEG_LIBS $GS_LIBS $LQR_LIBS $PNG_LIBS $AUTOTRACE_LIBS $DJVU_LIBS $FFTW_LIBS $FLIF_LIBS $FPX_LIBS $FONTCONFIG_LIBS $HEIC_LIBS $WEBP_LIBS $WMF_LIBS $DPS_LIBS $XEXT_LIBS $XT_LIBS $IPC_LIBS $X11_LIBS $LZMA_LIBS $BZLIB_LIBS $OPENEXR_LIBS $LIBOPENJP2_LIBS $PANGO_LIBS $RAW_R_LIBS $RSVG_LIBS $XML_LIBS $GVC_LIBS $ZLIB_LIBS $GDI32_LIBS $MATH_LIBS $GOMP_LIBS $CL_LIBS $UMEM_LIBS $JEMALLOC_LIBS $THREAD_LIBS"
 fi
 
 
@@ -38468,6 +37023,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${GVC_DELEGATE_TRUE}" && test -z "${GVC_DELEGATE_FALSE}"; then
   as_fn_error $? "conditional \"GVC_DELEGATE\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HEIC_DELEGATE_TRUE}" && test -z "${HEIC_DELEGATE_FALSE}"; then
+  as_fn_error $? "conditional \"HEIC_DELEGATE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${JBIG_DELEGATE_TRUE}" && test -z "${JBIG_DELEGATE_FALSE}"; then
@@ -41168,6 +39727,7 @@ matches your expectations.
   FreeType          --with-freetype=$with_freetype		$have_freetype
   Ghostscript lib   --with-gslib=$with_gslib		$have_gslib
   Graphviz          --with-gvc=$with_gvc		$have_gvc
+  HEIC              --with-heic=$with_heic		$have_heic
   JBIG              --with-jbig=$with_jbig		$have_jbig
   JPEG v1           --with-jpeg=$with_jpeg		$have_jpeg
   LCMS              --with-lcms=$with_lcms		$have_lcms
@@ -41257,6 +39817,7 @@ matches your expectations.
   FreeType          --with-freetype=$with_freetype		$have_freetype
   Ghostscript lib   --with-gslib=$with_gslib		$have_gslib
   Graphviz          --with-gvc=$with_gvc		$have_gvc
+  HEIC              --with-heic=$with_heic		$have_heic
   JBIG              --with-jbig=$with_jbig		$have_jbig
   JPEG v1           --with-jpeg=$with_jpeg		$have_jpeg
   LCMS              --with-lcms=$with_lcms		$have_lcms
