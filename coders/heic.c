@@ -155,6 +155,9 @@ typedef struct _HEICImageContext
   de265_decoder_context
     *h265Ctx;
 
+  unsigned int exifSize;
+  uint8_t *exif;
+  
   Image
     *tmp;
 } HEICImageContext;
@@ -620,7 +623,7 @@ static MagickSizeType ParseAtom(Image *image, MagickSizeType size,
   {
     ThrowAndReturn("atom is too short");
   }
-
+  
   status = MagickTrue;
 
   switch (atom)
@@ -1002,6 +1005,37 @@ static Image *ReadHEICImage(const ImageInfo *image_info,
     ThrowReaderException(CorruptImageError,"Unable To Decode Image File");
   }
 
+  /* find exif if present */
+  ctx.exif = NULL;
+  ctx.exifSize = 0;
+  for(int i = 0; i <= ctx.idsCount; i++) {
+    if(ctx.itemInfo[i].type == ATOM('E', 'x', 'i', 'f')) {
+      ssize_t count;
+      ctx.exifSize = ctx.itemInfo[i].size;
+      ctx.exif = AcquireMagickMemory(ctx.exifSize);
+      SeekBlob(image, ctx.itemInfo[i].offset, SEEK_SET);
+      count = ReadBlob(image, ctx.exifSize, ctx.exif);
+      if (count != ctx.exifSize) {
+        ThrowReaderException(CorruptImageError,"Unable To Find Exif Data");
+      }
+      break;
+    }
+  }
+
+  if(ctx.exif != NULL) {
+    StringInfo
+      *profile;
+    
+    profile = BlobToStringInfo((const void *)ctx.exif, ctx.exifSize);
+    if (profile == (StringInfo *) NULL) {
+      return NULL;
+    }
+    
+    (void) SetImageProfile(image, "exif", profile, exception);
+    
+    profile = DestroyStringInfo(profile);
+  }    
+  
   /*
      Initialize h265 decoder
      */
