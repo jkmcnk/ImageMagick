@@ -1027,13 +1027,10 @@ static Image *ReadHEICImage(const ImageInfo *image_info,
       *profile;
     
     profile = BlobToStringInfo((const void *)ctx.exif, ctx.exifSize);
-    if (profile == (StringInfo *) NULL) {
-      return NULL;
+    if (profile != (StringInfo *) NULL) {
+      (void) SetImageProfile(image, "exif", profile, exception);    
+      profile = DestroyStringInfo(profile);
     }
-    
-    (void) SetImageProfile(image, "exif", profile, exception);
-    
-    profile = DestroyStringInfo(profile);
   }    
   
   /*
