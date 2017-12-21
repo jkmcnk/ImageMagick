@@ -1015,7 +1015,7 @@ static MagickBooleanType decodeH265Image(Image *image, HEICImageContext *ctx, un
         for (x = 0; x < 256; x++) {
           SetPixelGreen(chroma, ScaleCharToQuantum(*p1++), q);
           SetPixelBlue(chroma, ScaleCharToQuantum(*p2++), q);
-          q++;
+          q+=GetPixelChannels(chroma);
         }
 
         if (SyncAuthenticPixels(chroma, exception) == MagickFalse) {
@@ -1048,8 +1048,8 @@ static MagickBooleanType decodeH265Image(Image *image, HEICImageContext *ctx, un
           SetPixelGreen(image, GetPixelGreen(resized_chroma, p), q);
           SetPixelBlue(image, GetPixelBlue(resized_chroma, p), q);
           l++;
-          q++;
-          p++;
+          q+=GetPixelChannels(image);
+          p+=GetPixelChannels(resized_chroma);
         }
 
         if (SyncAuthenticPixels(image, exception) == MagickFalse) {
