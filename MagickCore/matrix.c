@@ -17,7 +17,7 @@
 %                              August 2007                                    %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -171,8 +171,7 @@ static inline MagickOffsetType WriteMatrixElements(
 }
 
 static MagickBooleanType SetMatrixExtent(
-  MatrixInfo *magick_restrict matrix_info,
-  MagickSizeType length)
+  MatrixInfo *magick_restrict matrix_info,MagickSizeType length)
 {
   MagickOffsetType
     count,
@@ -264,7 +263,6 @@ MagickExport MatrixInfo *AcquireMatrixInfo(const size_t columns,
           return(DestroyMatrixInfo(matrix_info));
         }
       matrix_info->type=DiskCache;
-      (void) AcquireMagickResource(MemoryResource,matrix_info->length);
       matrix_info->file=AcquireUniqueFileResource(matrix_info->path);
       if (matrix_info->file == -1)
         return(DestroyMatrixInfo(matrix_info));
@@ -273,14 +271,12 @@ MagickExport MatrixInfo *AcquireMatrixInfo(const size_t columns,
         {
           status=SetMatrixExtent(matrix_info,matrix_info->length);
           if (status != MagickFalse)
-            {
-              matrix_info->elements=(void *) MapBlob(matrix_info->file,IOMode,0,
-                (size_t) matrix_info->length);
-              if (matrix_info->elements != NULL)
-                matrix_info->type=MapCache;
-              else
-                RelinquishMagickResource(MapResource,matrix_info->length);
-            }
+            matrix_info->elements=(void *) MapBlob(matrix_info->file,IOMode,0,
+              (size_t) matrix_info->length);
+          if (matrix_info->elements != NULL)
+            matrix_info->type=MapCache;
+          else
+            RelinquishMagickResource(MapResource,matrix_info->length);
         }
     }
   return(matrix_info);
@@ -335,12 +331,12 @@ MagickExport double **AcquireMagickMatrix(const size_t number_rows,
   {
     matrix[i]=(double *) AcquireQuantumMemory(size,sizeof(*matrix[i]));
     if (matrix[i] == (double *) NULL)
-    {
-      for (j=0; j < i; j++)
-        matrix[j]=(double *) RelinquishMagickMemory(matrix[j]);
-      matrix=(double **) RelinquishMagickMemory(matrix);
-      return((double **) NULL);
-    }
+      {
+        for (j=0; j < i; j++)
+          matrix[j]=(double *) RelinquishMagickMemory(matrix[j]);
+        matrix=(double **) RelinquishMagickMemory(matrix);
+        return((double **) NULL);
+      }
     for (j=0; j < (ssize_t) size; j++)
       matrix[i][j]=0.0;
   }
@@ -1075,7 +1071,7 @@ MagickExport double **RelinquishMagickMatrix(double **matrix,
   if (matrix == (double **) NULL )
     return(matrix);
   for (i=0; i < (ssize_t) number_rows; i++)
-     matrix[i]=(double *) RelinquishMagickMemory(matrix[i]);
+    matrix[i]=(double *) RelinquishMagickMemory(matrix[i]);
   matrix=(double **) RelinquishMagickMemory(matrix);
   return(matrix);
 }

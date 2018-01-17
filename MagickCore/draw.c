@@ -18,7 +18,7 @@
 %                                 July 1998                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -2322,8 +2322,11 @@ MagickExport MagickBooleanType DrawImage(Image *image,const DrawInfo *draw_info,
                     continue;
                   break;
                 }
-                (void) CopyMagickString(token,p,(size_t) (q-p-4+1));
-                (void) SetImageArtifact(image,name,token);
+                if ((size_t) (q-p-4+1) > 0)
+                  {
+                    (void) CopyMagickString(token,p,(size_t) (q-p-4+1));
+                    (void) SetImageArtifact(image,name,token);
+                  }
                 GetNextToken(q,&q,extent,token);
                 break;
               }
@@ -2379,31 +2382,35 @@ MagickExport MagickBooleanType DrawImage(Image *image,const DrawInfo *draw_info,
                     continue;
                   break;
                 }
-                (void) CopyMagickString(token,p,(size_t) (q-p-4+1));
-                bounds.x1=graphic_context[n]->affine.sx*segment.x1+
-                  graphic_context[n]->affine.ry*segment.y1+
-                  graphic_context[n]->affine.tx;
-                bounds.y1=graphic_context[n]->affine.rx*segment.x1+
-                  graphic_context[n]->affine.sy*segment.y1+
-                  graphic_context[n]->affine.ty;
-                bounds.x2=graphic_context[n]->affine.sx*segment.x2+
-                  graphic_context[n]->affine.ry*segment.y2+
-                  graphic_context[n]->affine.tx;
-                bounds.y2=graphic_context[n]->affine.rx*segment.x2+
-                  graphic_context[n]->affine.sy*segment.y2+
-                  graphic_context[n]->affine.ty;
-                (void) FormatLocaleString(key,MagickPathExtent,"%s",name);
-                (void) SetImageArtifact(image,key,token);
-                (void) FormatLocaleString(key,MagickPathExtent,"%s-type",name);
-                (void) SetImageArtifact(image,key,type);
-                (void) FormatLocaleString(key,MagickPathExtent,"%s-geometry",
-                  name);
-                (void) FormatLocaleString(geometry,MagickPathExtent,
-                  "%gx%g%+.15g%+.15g",
-                  MagickMax(fabs(bounds.x2-bounds.x1+1.0),1.0),
-                  MagickMax(fabs(bounds.y2-bounds.y1+1.0),1.0),
-                  bounds.x1,bounds.y1);
-                (void) SetImageArtifact(image,key,geometry);
+                if ((size_t) (q-p-4+1) > 0)
+                  {
+                    (void) CopyMagickString(token,p,(size_t) (q-p-4+1));
+                    bounds.x1=graphic_context[n]->affine.sx*segment.x1+
+                      graphic_context[n]->affine.ry*segment.y1+
+                      graphic_context[n]->affine.tx;
+                    bounds.y1=graphic_context[n]->affine.rx*segment.x1+
+                      graphic_context[n]->affine.sy*segment.y1+
+                      graphic_context[n]->affine.ty;
+                    bounds.x2=graphic_context[n]->affine.sx*segment.x2+
+                      graphic_context[n]->affine.ry*segment.y2+
+                      graphic_context[n]->affine.tx;
+                    bounds.y2=graphic_context[n]->affine.rx*segment.x2+
+                      graphic_context[n]->affine.sy*segment.y2+
+                      graphic_context[n]->affine.ty;
+                    (void) FormatLocaleString(key,MagickPathExtent,"%s",name);
+                    (void) SetImageArtifact(image,key,token);
+                    (void) FormatLocaleString(key,MagickPathExtent,"%s-type",
+                      name);
+                    (void) SetImageArtifact(image,key,type);
+                    (void) FormatLocaleString(key,MagickPathExtent,
+                      "%s-geometry",name);
+                    (void) FormatLocaleString(geometry,MagickPathExtent,
+                      "%gx%g%+.15g%+.15g",
+                      MagickMax(fabs(bounds.x2-bounds.x1+1.0),1.0),
+                      MagickMax(fabs(bounds.y2-bounds.y1+1.0),1.0),
+                      bounds.x1,bounds.y1);
+                    (void) SetImageArtifact(image,key,geometry);
+                  }
                 GetNextToken(q,&q,extent,token);
                 break;
               }
@@ -2454,16 +2461,19 @@ MagickExport MagickBooleanType DrawImage(Image *image,const DrawInfo *draw_info,
                     continue;
                   break;
                 }
-                (void) CopyMagickString(token,p,(size_t) (q-p-4+1));
-                (void) FormatLocaleString(key,MagickPathExtent,"%s",name);
-                (void) SetImageArtifact(image,key,token);
-                (void) FormatLocaleString(key,MagickPathExtent,"%s-geometry",
-                  name);
-                (void) FormatLocaleString(geometry,MagickPathExtent,
-                  "%.20gx%.20g%+.20g%+.20g",(double)pattern_bounds.width,
-                  (double)pattern_bounds.height,(double)pattern_bounds.x,
-                  (double)pattern_bounds.y);
-                (void) SetImageArtifact(image,key,geometry);
+                if ((size_t) (q-p-4+1) > 0)
+                  {
+                    (void) CopyMagickString(token,p,(size_t) (q-p-4+1));
+                    (void) FormatLocaleString(key,MagickPathExtent,"%s",name);
+                    (void) SetImageArtifact(image,key,token);
+                    (void) FormatLocaleString(key,MagickPathExtent,
+                      "%s-geometry",name);
+                    (void) FormatLocaleString(geometry,MagickPathExtent,
+                      "%.20gx%.20g%+.20g%+.20g",(double)pattern_bounds.width,
+                      (double)pattern_bounds.height,(double)pattern_bounds.x,
+                      (double)pattern_bounds.y);
+                    (void) SetImageArtifact(image,key,geometry);
+                  }
                 GetNextToken(q,&q,extent,token);
                 break;
               }

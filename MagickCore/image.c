@@ -17,7 +17,7 @@
 %                                 July 1992                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -823,9 +823,7 @@ MagickExport Image *CloneImage(const Image *image,const size_t columns,
         "NegativeOrZeroImageSize","`%s'",image->filename);
       return((Image *) NULL);
     }
-  clone_image=(Image *) AcquireMagickMemory(sizeof(*clone_image));
-  if (clone_image == (Image *) NULL)
-    ThrowImageException(ResourceLimitError,"MemoryAllocationFailed");
+  clone_image=(Image *) AcquireCriticalMemory(sizeof(*clone_image));
   (void) ResetMagickMemory(clone_image,0,sizeof(*clone_image));
   clone_image->signature=MagickCoreSignature;
   clone_image->storage_class=image->storage_class;
@@ -3140,7 +3138,7 @@ MagickExport MagickBooleanType SetImageMask(Image *image,const PixelMask type,
       MagickRealType
         intensity;
 
-      intensity=0;
+      intensity=0.0;
       if ((x < (ssize_t) mask->columns) && (y < (ssize_t) mask->rows))
         intensity=GetPixelIntensity(mask,p);
       switch (type)
@@ -3259,7 +3257,7 @@ MagickExport MagickBooleanType SetImageRegionMask(Image *image,
       Quantum
         pixel;
 
-      pixel=0;
+      pixel=(Quantum) 0;
       if (((x >= region->x) && (x < (region->x+(ssize_t) region->width))) &&
           ((y >= region->y) && (y < (region->y+(ssize_t) region->height))))
         pixel=QuantumRange;

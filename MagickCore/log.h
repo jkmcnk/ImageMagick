@@ -1,5 +1,5 @@
 /*
-  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization
+  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization
   dedicated to making software imaging solutions freely available.
   
   You may not use this file except in compliance with the License.
@@ -81,8 +81,7 @@ extern MagickExport MagickBooleanType
   IsEventLogging(void),
   ListLogInfo(FILE *,ExceptionInfo *),
   LogMagickEvent(const LogEventType,const char *,const char *,const size_t,
-    const char *,...) 
-    magick_attribute((__format__ (__printf__,5,6))),
+    const char *,...) magick_attribute((__format__ (__printf__,5,6))),
   LogMagickEventList(const LogEventType,const char *,const char *,const size_t,
     const char *,va_list) magick_attribute((__format__ (__printf__,5,0)));
 

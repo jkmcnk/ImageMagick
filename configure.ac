@@ -1,4 +1,4 @@
-#  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization
+#  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization
 #  dedicated to making software imaging solutions freely available.
 #
 #  You may not use this file except in compliance with the License.  You may
@@ -27,7 +27,7 @@ AC_PREREQ(2.69)
 m4_define([magick_major_version], [7])
 m4_define([magick_minor_version], [0])
 m4_define([magick_micro_version], [7])
-m4_define([magick_patchlevel_version], [9])
+m4_define([magick_patchlevel_version], [15])
 m4_define([magick_version],
           [magick_major_version.magick_minor_version.magick_micro_version-magick_patchlevel_version])
 m4_define([magick_git_revision], esyscmd([sh -c "(gitversion.sh .) | tr -d '\n'"]))
@@ -771,6 +771,7 @@ AC_ARG_WITH([method-prefix],
 
 if test "$with_method_prefix" != 'no'; then
     AC_DEFINE_UNQUOTED(NAMESPACE_PREFIX,$with_method_prefix,[Magick API method prefix])
+    AC_DEFINE_UNQUOTED(NAMESPACE_PREFIX_TAG,["$with_method_prefix"],[Magick API method prefix tag])
     DISTCHECK_CONFIG_FLAGS="${DISTCHECK_CONFIG_FLAGS} --with-method-prefix "
 fi
 
@@ -1686,7 +1687,7 @@ dnl ===========================================================================
 with_ltdl='yes'
 have_ltdl='no'
 LTDL_LIBS=''
-if test "$build_modules" != 'no' ; then
+if test "$build_modules" != 'no' || test "X$ax_cv_check_cl_libcl" != Xno; then
   AC_MSG_RESULT([-------------------------------------------------------------])
   AC_MSG_CHECKING([for libltdl])
   AC_MSG_RESULT([])
@@ -1702,7 +1703,7 @@ if test "$build_modules" != 'no' ; then
     else
       LTDL_LIBS='-lltdl'
       LIBS="$LTDL_LIBS $LIBS"
-      AC_DEFINE(LTDL_DELEGATE,1,[Define if using libltdl to support dynamically loadable modules])
+      AC_DEFINE(LTDL_DELEGATE,1,[Define if using libltdl to support dynamically loadable modules and OpenCL])
       AC_MSG_RESULT([yes])
       have_ltdl='yes'
     fi
@@ -1710,7 +1711,7 @@ if test "$build_modules" != 'no' ; then
     AC_MSG_RESULT([no])
   fi
   if test "$have_ltdl" != 'yes' ; then
-    AC_MSG_FAILURE([libltdl is required for modules build],[1])
+    AC_MSG_FAILURE([libltdl is required for modules and OpenCL builds],[1])
   fi
 fi
 AM_CONDITIONAL(WITH_LTDL, test "$have_ltdl" != 'no')
@@ -2242,9 +2243,9 @@ AC_SUBST(GVC_LIBS)
 dnl ===========================================================================
 
 #
-# Check for HEIC delegate library.
+# Check for the HEIC delegate library.
 #
-AC_ARG_WITH(heic,
+AC_ARG_WITH([heic],
     [AC_HELP_STRING([--without-heic],
                     [disable HEIC support])],
     [with_heic=$withval],
@@ -2255,32 +2256,22 @@ if test "$with_heic" != 'yes'; then
 fi
 
 have_heic='no'
-HEIC_LIBS=''
-if test "$with_heic" != 'no'; then
-    AC_MSG_RESULT([-------------------------------------------------------------])
-    AC_MSG_CHECKING([for HEIC])
-    AC_MSG_RESULT([])
-    failed=0
-    passed=0
-    AC_CHECK_HEADER(libde265/de265.h,passed=`expr $passed + 1`,failed=`expr $failed + 1`,)
-    AC_CHECK_LIB(de265,de265_get_version_number,passed=`expr $passed + 1`,failed=`expr $failed + 1`,)
-    AC_MSG_CHECKING([if HEIC package is complete])
-    if test $passed -gt 0; then
-        if test $failed -gt 0; then
-            AC_MSG_RESULT([no -- some components failed test])
-            have_heic='no (failed tests)'
-        else
-            HEIC_LIBS='-lde265'
-            LIBS="$HEIC_LIBS $LIBS"
-            AC_DEFINE(HEIC_DELEGATE,1,Define if you have HEIC library)
-            AC_MSG_RESULT([yes])
-            have_heic='yes'
-        fi
-    else
-        AC_MSG_RESULT([no])
-    fi
+HEIC_CFLAGS=""
+HEIC_LIBS=""
+HEIC_PKG=""
+if test "x$with_heic" = "xyes"; then
+  AC_MSG_RESULT([-------------------------------------------------------------])
+  PKG_CHECK_MODULES(HEIC,[libde265], have_heic=yes, have_heic=no)
+  AC_MSG_RESULT([])
 fi
-AM_CONDITIONAL(HEIC_DELEGATE,test "$have_heic" = 'yes')
+
+if test "$have_heic" = 'yes'; then
+  AC_DEFINE(HEIC_DELEGATE,1,Define if you have HEIC library)
+  CFLAGS="$HEIC_CFLAGS $CFLAGS"
+fi
+
+AM_CONDITIONAL(HEIC_DELEGATE, test "$have_heic" = 'yes')
+AC_SUBST(HEIC_CFLAGS)
 AC_SUBST(HEIC_LIBS)
 
 dnl ===========================================================================
@@ -2784,9 +2775,9 @@ fi
 dnl ===========================================================================
 
 #
-# Check for WEBP delegate library.
+# Check for the WEBP delegate library.
 #
-AC_ARG_WITH(webp,
+AC_ARG_WITH([webp],
     [AC_HELP_STRING([--without-webp],
                     [disable WEBP support])],
     [with_webp=$withval],
@@ -2797,32 +2788,35 @@ if test "$with_webp" != 'yes'; then
 fi
 
 have_webp='no'
-WEBP_LIBS=''
-if test "$with_webp" != 'no'; then
-    AC_MSG_RESULT([-------------------------------------------------------------])
-    AC_MSG_CHECKING([for WEBP])
-    AC_MSG_RESULT([])
-    failed=0
-    passed=0
-    AC_CHECK_HEADER(webp/decode.h,passed=`expr $passed + 1`,failed=`expr $failed + 1`,)
-    AC_CHECK_LIB(webp,WebPPictureInitInternal,passed=`expr $passed + 1`,failed=`expr $failed + 1`,)
-    AC_MSG_CHECKING([if WEBP package is complete])
-    if test $passed -gt 0; then
-        if test $failed -gt 0; then
-            AC_MSG_RESULT([no -- some components failed test])
-            have_webp='no (failed tests)'
-        else
-            WEBP_LIBS='-lwebp'
-            LIBS="$WEBP_LIBS $LIBS"
-            AC_DEFINE(WEBP_DELEGATE,1,Define if you have WEBP library)
-            AC_MSG_RESULT([yes])
-            have_webp='yes'
-        fi
-    else
-        AC_MSG_RESULT([no])
-    fi
+have_webpmux='no'
+WEBP_CFLAGS=""
+WEBP_LIBS=""
+WEBP_PKG=""
+WEBPMUX_CFLAGS=""
+WEBPMUX_LIBS=""
+WEBPMUX_PKG=""
+if test "x$with_webp" = "xyes"; then
+  AC_MSG_RESULT([-------------------------------------------------------------])
+  PKG_CHECK_MODULES(WEBP,[libwebp], have_webp=yes, have_webp=no)
+  PKG_CHECK_MODULES(WEBPMUX,[libwebpmux], have_webpmux=yes, have_webpmux=no)
+  AC_MSG_RESULT([])
 fi
-AM_CONDITIONAL(WEBP_DELEGATE,test "$have_webp" = 'yes')
+
+if test "$have_webp" = 'yes'; then
+  AC_DEFINE(WEBP_DELEGATE,1,Define if you have WEBP library)
+  CFLAGS="$WEBP_CFLAGS $CFLAGS"
+fi
+
+if test "$have_webpmux" = 'yes'; then
+  AC_DEFINE(WEBPMUX_DELEGATE,1,Define if you have WEBPMUX library)
+  CFLAGS="$WEBPMUX_CFLAGS $CFLAGS"
+fi
+
+AM_CONDITIONAL(WEBP_DELEGATE, test "$have_webp" = 'yes')
+AM_CONDITIONAL(WEBPMUX_DELEGATE, test "$have_webpmux" = 'yes')
+AC_SUBST(WEBPMUX_CFLAGS)
+AC_SUBST(WEBPMUX_LIBS)
+AC_SUBST(WEBP_CFLAGS)
 AC_SUBST(WEBP_LIBS)
 
 
@@ -3884,7 +3878,7 @@ fi
 if test "$build_modules" != 'no'; then
     MAGICK_DEP_LIBS="$USER_LIBS $LCMS_LIBS $FREETYPE_LIBS $RAQM_LIBS $LQR_LIBS $FFTW_LIBS $FLIF_LIBS $FONTCONFIG_LIBS $XEXT_LIBS $IPC_LIBS $X11_LIBS $XT_LIBS $LZMA_LIBS $BZLIB_LIBS $ZLIB_LIBS $LTDL_LIBS $GDI32_LIBS $MATH_LIBS $GOMP_LIBS $CL_LIBS $UMEM_LIBS $JEMALLOC_LIBS $THREAD_LIBS"
 else
-    MAGICK_DEP_LIBS="$USER_LIBS $JBIG_LIBS $LCMS_LIBS $TIFF_LIBS $FREETYPE_LIBS $RAQM_LIBS $JPEG_LIBS $GS_LIBS $LQR_LIBS $PNG_LIBS $AUTOTRACE_LIBS $DJVU_LIBS $FFTW_LIBS $FLIF_LIBS $FPX_LIBS $FONTCONFIG_LIBS $HEIC_LIBS $WEBP_LIBS $WMF_LIBS $DPS_LIBS $XEXT_LIBS $XT_LIBS $IPC_LIBS $X11_LIBS $LZMA_LIBS $BZLIB_LIBS $OPENEXR_LIBS $LIBOPENJP2_LIBS $PANGO_LIBS $RAW_R_LIBS $RSVG_LIBS $XML_LIBS $GVC_LIBS $ZLIB_LIBS $GDI32_LIBS $MATH_LIBS $GOMP_LIBS $CL_LIBS $UMEM_LIBS $JEMALLOC_LIBS $THREAD_LIBS"
+    MAGICK_DEP_LIBS="$USER_LIBS $JBIG_LIBS $LCMS_LIBS $TIFF_LIBS $FREETYPE_LIBS $RAQM_LIBS $JPEG_LIBS $GS_LIBS $LQR_LIBS $PNG_LIBS $AUTOTRACE_LIBS $DJVU_LIBS $FFTW_LIBS $FLIF_LIBS $FPX_LIBS $FONTCONFIG_LIBS $HEIC_LIBS $WEBPMUX_LIBS $WEBP_LIBS $WMF_LIBS $DPS_LIBS $XEXT_LIBS $XT_LIBS $IPC_LIBS $X11_LIBS $LZMA_LIBS $BZLIB_LIBS $OPENEXR_LIBS $LIBOPENJP2_LIBS $PANGO_LIBS $RAW_R_LIBS $RSVG_LIBS $XML_LIBS $GVC_LIBS $ZLIB_LIBS $LTDL_LIBS $GDI32_LIBS $MATH_LIBS $GOMP_LIBS $CL_LIBS $UMEM_LIBS $JEMALLOC_LIBS $THREAD_LIBS"
 fi
 AC_SUBST(MAGICK_DEP_LIBS)
 

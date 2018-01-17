@@ -1,5 +1,5 @@
 /*
-Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization
+Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization
 dedicated to making software imaging solutions freely available.
 
 You may not use this file except in compliance with the License.
@@ -121,6 +121,10 @@ typedef CL_API_ENTRY cl_int
 typedef CL_API_ENTRY cl_mem
   (CL_API_CALL *MAGICKpfn_clCreateBuffer)(cl_context context,
     cl_mem_flags flags,size_t size,void *host_ptr,cl_int *errcode_ret)
+    CL_API_SUFFIX__VERSION_1_0;
+
+typedef CL_API_ENTRY cl_int
+  (CL_API_CALL *MAGICKpfn_clRetainMemObject)(cl_mem memobj)
     CL_API_SUFFIX__VERSION_1_0;
 
 typedef CL_API_ENTRY cl_int
@@ -259,6 +263,7 @@ struct MagickLibraryRec
   MAGICKpfn_clFinish                  clFinish;
 
   MAGICKpfn_clCreateBuffer            clCreateBuffer;
+  MAGICKpfn_clRetainMemObject         clRetainMemObject;
   MAGICKpfn_clReleaseMemObject        clReleaseMemObject;
 
   MAGICKpfn_clCreateProgramWithSource clCreateProgramWithSource;
@@ -453,7 +458,8 @@ extern MagickPrivate void
   ReleaseOpenCLDevice(MagickCLDevice),
   ReleaseOpenCLKernel(cl_kernel),
   ReleaseOpenCLMemObject(cl_mem),
-  RetainOpenCLEvent(cl_event);
+  RetainOpenCLEvent(cl_event),
+  RetainOpenCLMemObject(cl_mem);
 
 #endif
 

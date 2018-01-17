@@ -21,7 +21,7 @@
 %                                April 2016                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -259,9 +259,6 @@ static cl_mem createKernelInfo(MagickCLDevice device,const double radius,
   char
     geometry[MagickPathExtent];
 
-  cl_int
-    status;
-
   cl_mem
     imageKernelBuffer;
 
@@ -395,13 +392,13 @@ cleanup:
 */
 
 static Image *ComputeAddNoiseImage(const Image *image,MagickCLEnv clEnv,
-  const NoiseType noise_type,ExceptionInfo *exception)
+  const NoiseType noise_type,const double attenuate,ExceptionInfo *exception)
 {
   cl_command_queue
     queue;
 
   cl_float
-    attenuate;
+    cl_attenuate;
 
   cl_int
     status;
@@ -422,9 +419,6 @@ static Image *ComputeAddNoiseImage(const Image *image,MagickCLEnv clEnv,
     seed0,
     seed1,
     workItemCount;
-
-  const char
-    *option;
 
   const unsigned long
     *s;
@@ -448,6 +442,8 @@ static Image *ComputeAddNoiseImage(const Image *image,MagickCLEnv clEnv,
     numRandPerChannel;
 
   filteredImage=NULL;
+  imageBuffer=NULL;
+  filteredImageBuffer=NULL;
   addNoiseKernel=NULL;
   outputReady=MagickFalse;
 
@@ -519,10 +515,7 @@ static Image *ComputeAddNoiseImage(const Image *image,MagickCLEnv clEnv,
 
   number_channels=(cl_uint) image->number_channels;
   bufferLength=(cl_uint) (image->columns*image->rows*image->number_channels);
-  attenuate=1.0f;
-  option=GetImageArtifact(image,"attenuate");
-  if (option != (char *) NULL)
-    attenuate=(float)StringToDouble(option,(char **) NULL);
+  cl_attenuate=(cl_float) attenuate;
 
   i=0;
   status =SetOpenCLKernelArg(addNoiseKernel,i++,sizeof(cl_mem),(void *)&imageBuffer);
@@ -531,7 +524,7 @@ static Image *ComputeAddNoiseImage(const Image *image,MagickCLEnv clEnv,
   status|=SetOpenCLKernelArg(addNoiseKernel,i++,sizeof(cl_uint),(void *)&bufferLength);
   status|=SetOpenCLKernelArg(addNoiseKernel,i++,sizeof(cl_uint),(void *)&pixelsPerWorkitem);
   status|=SetOpenCLKernelArg(addNoiseKernel,i++,sizeof(NoiseType),(void *)&noise_type);
-  status|=SetOpenCLKernelArg(addNoiseKernel,i++,sizeof(cl_float),(void *)&attenuate);
+  status|=SetOpenCLKernelArg(addNoiseKernel,i++,sizeof(cl_float),(void *)&cl_attenuate);
   status|=SetOpenCLKernelArg(addNoiseKernel,i++,sizeof(cl_uint),(void *)&seed0);
   status|=SetOpenCLKernelArg(addNoiseKernel,i++,sizeof(cl_uint),(void *)&seed1);
   status|=SetOpenCLKernelArg(addNoiseKernel,i++,sizeof(cl_uint),(void *)&numRandomNumberPerPixel);
@@ -548,6 +541,10 @@ static Image *ComputeAddNoiseImage(const Image *image,MagickCLEnv clEnv,
 
 cleanup:
 
+  if (imageBuffer != (cl_mem) NULL)
+    ReleaseOpenCLMemObject(imageBuffer);
+  if (filteredImageBuffer != (cl_mem) NULL)
+    ReleaseOpenCLMemObject(filteredImageBuffer);
   if (addNoiseKernel != (cl_kernel) NULL)
     ReleaseOpenCLKernel(addNoiseKernel);
   if (queue != (cl_command_queue) NULL)
@@ -561,7 +558,7 @@ cleanup:
 }
 
 MagickPrivate Image *AccelerateAddNoiseImage(const Image *image,
-  const NoiseType noise_type,ExceptionInfo *exception)
+  const NoiseType noise_type,const double attenuate,ExceptionInfo *exception)
 {
   Image
     *filteredImage;
@@ -579,7 +576,8 @@ MagickPrivate Image *AccelerateAddNoiseImage(const Image *image,
   if (clEnv == (MagickCLEnv) NULL)
     return((Image *) NULL);
 
-  filteredImage=ComputeAddNoiseImage(image,clEnv,noise_type,exception);
+  filteredImage=ComputeAddNoiseImage(image,clEnv,noise_type,attenuate,
+    exception);
   return(filteredImage);
 }
 
@@ -639,6 +637,8 @@ static Image *ComputeBlurImage(const Image* image,MagickCLEnv clEnv,
     lsize[2];
 
   filteredImage=NULL;
+  imageBuffer=NULL;
+  filteredImageBuffer=NULL;
   tempImageBuffer=NULL;
   imageKernelBuffer=NULL;
   blurRowKernel=NULL;
@@ -744,6 +744,10 @@ static Image *ComputeBlurImage(const Image* image,MagickCLEnv clEnv,
 
 cleanup:
 
+  if (imageBuffer != (cl_mem) NULL)
+    ReleaseOpenCLMemObject(imageBuffer);
+  if (filteredImageBuffer != (cl_mem) NULL)
+    ReleaseOpenCLMemObject(filteredImageBuffer);
   if (tempImageBuffer != (cl_mem) NULL)
     ReleaseOpenCLMemObject(tempImageBuffer);
   if (imageKernelBuffer != (cl_mem) NULL)
@@ -810,9 +814,6 @@ static MagickBooleanType ComputeContrastImage(Image *image,MagickCLEnv clEnv,
   cl_kernel
     contrastKernel;
 
-  cl_event
-    event;
-
   cl_mem
     imageBuffer;
 
@@ -830,6 +831,7 @@ static MagickBooleanType ComputeContrastImage(Image *image,MagickCLEnv clEnv,
     i;
 
   contrastKernel=NULL;
+  imageBuffer=NULL;
   outputReady=MagickFalse;
 
   device=RequestOpenCLDevice(clEnv);
@@ -868,6 +870,8 @@ static MagickBooleanType ComputeContrastImage(Image *image,MagickCLEnv clEnv,
 
 cleanup:
 
+  if (imageBuffer != (cl_mem) NULL)
+    ReleaseOpenCLMemObject(imageBuffer);
   if (contrastKernel != (cl_kernel) NULL)
     ReleaseOpenCLKernel(contrastKernel);
   if (queue != (cl_command_queue) NULL)
@@ -2719,6 +2723,7 @@ static MagickBooleanType ComputeFunctionImage(Image *image,MagickCLEnv clEnv,
 
   outputReady=MagickFalse;
 
+  imageBuffer=NULL;
   functionKernel=NULL;
   parametersBuffer=NULL;
 
@@ -2778,6 +2783,8 @@ static MagickBooleanType ComputeFunctionImage(Image *image,MagickCLEnv clEnv,
 
 cleanup:
 
+  if (imageBuffer != (cl_mem) NULL)
+    ReleaseOpenCLMemObject(imageBuffer);
   if (parametersBuffer != (cl_mem) NULL)
     ReleaseOpenCLMemObject(parametersBuffer);
   if (functionKernel != (cl_kernel) NULL)
@@ -2857,6 +2864,7 @@ static MagickBooleanType ComputeGrayscaleImage(Image *image,MagickCLEnv clEnv,
     i;
 
   outputReady=MagickFalse;
+  imageBuffer=NULL;
   grayscaleKernel=NULL;
 
   assert(image != (Image *) NULL);
@@ -2899,6 +2907,8 @@ static MagickBooleanType ComputeGrayscaleImage(Image *image,MagickCLEnv clEnv,
 
 cleanup:
 
+  if (imageBuffer != (cl_mem) NULL)
+    ReleaseOpenCLMemObject(imageBuffer);
   if (grayscaleKernel != (cl_kernel) NULL)
     ReleaseOpenCLKernel(grayscaleKernel);
   if (queue != (cl_command_queue) NULL)
@@ -4289,6 +4299,8 @@ static Image *ComputeResizeImage(const Image* image,MagickCLEnv clEnv,
     i;
 
   filteredImage=NULL;
+  imageBuffer=NULL;
+  filteredImageBuffer=NULL;
   tempImageBuffer=NULL;
   cubicCoefficientsBuffer=NULL;
   outputReady=MagickFalse;
@@ -4382,6 +4394,10 @@ static Image *ComputeResizeImage(const Image* image,MagickCLEnv clEnv,
 
 cleanup:
 
+  if (imageBuffer != (cl_mem) NULL)
+    ReleaseOpenCLMemObject(imageBuffer);
+  if (filteredImageBuffer != (cl_mem) NULL)
+    ReleaseOpenCLMemObject(filteredImageBuffer);
   if (tempImageBuffer != (cl_mem) NULL)
     ReleaseOpenCLMemObject(tempImageBuffer);
   if (cubicCoefficientsBuffer != (cl_mem) NULL)
@@ -4501,6 +4517,8 @@ static Image* ComputeRotationalBlurImage(const Image *image,MagickCLEnv clEnv,
     i;
 
   filteredImage=NULL;
+  imageBuffer=NULL;
+  filteredImageBuffer=NULL;
   sinThetaBuffer=NULL;
   cosThetaBuffer=NULL;
   rotationalBlurKernel=NULL;
@@ -4591,6 +4609,10 @@ static Image* ComputeRotationalBlurImage(const Image *image,MagickCLEnv clEnv,
 
 cleanup:
 
+  if (imageBuffer != (cl_mem) NULL)
+    ReleaseOpenCLMemObject(imageBuffer);
+  if (filteredImageBuffer != (cl_mem) NULL)
+    ReleaseOpenCLMemObject(filteredImageBuffer);
   if (sinThetaBuffer != (cl_mem) NULL)
     ReleaseOpenCLMemObject(sinThetaBuffer);
   if (cosThetaBuffer != (cl_mem) NULL)
@@ -4693,6 +4715,8 @@ static Image *ComputeUnsharpMaskImage(const Image *image,MagickCLEnv clEnv,
     lsize[2];
 
   filteredImage=NULL;
+  imageBuffer=NULL;
+  filteredImageBuffer=NULL;
   tempImageBuffer=NULL;
   imageKernelBuffer=NULL;
   blurRowKernel=NULL;
@@ -4809,6 +4833,10 @@ static Image *ComputeUnsharpMaskImage(const Image *image,MagickCLEnv clEnv,
 
 cleanup:
 
+  if (imageBuffer != (cl_mem) NULL)
+    ReleaseOpenCLMemObject(imageBuffer);
+  if (filteredImageBuffer != (cl_mem) NULL)
+    ReleaseOpenCLMemObject(filteredImageBuffer);
   if (tempImageBuffer != (cl_mem) NULL)
     ReleaseOpenCLMemObject(tempImageBuffer);
   if (imageKernelBuffer != (cl_mem) NULL)
@@ -4870,6 +4898,8 @@ static Image *ComputeUnsharpMaskImageSingle(const Image *image,
     lsize[2];
 
   filteredImage=NULL;
+  imageBuffer=NULL;
+  filteredImageBuffer=NULL;
   imageKernelBuffer=NULL;
   unsharpMaskKernel=NULL;
   outputReady=MagickFalse;
@@ -4933,6 +4963,10 @@ static Image *ComputeUnsharpMaskImageSingle(const Image *image,
 
 cleanup:
 
+  if (imageBuffer != (cl_mem) NULL)
+    ReleaseOpenCLMemObject(imageBuffer);
+  if (filteredImageBuffer != (cl_mem) NULL)
+    ReleaseOpenCLMemObject(filteredImageBuffer);
   if (imageKernelBuffer != (cl_mem) NULL)
     ReleaseOpenCLMemObject(imageKernelBuffer);
   if (unsharpMaskKernel != (cl_kernel) NULL)
@@ -5027,6 +5061,8 @@ static Image *ComputeWaveletDenoiseImage(const Image *image,MagickCLEnv clEnv,
     x;
 
   filteredImage=NULL;
+  imageBuffer=NULL;
+  filteredImageBuffer=NULL;
   denoiseKernel=NULL;
   queue=NULL;
   outputReady=MagickFalse;
@@ -5100,6 +5136,10 @@ static Image *ComputeWaveletDenoiseImage(const Image *image,MagickCLEnv clEnv,
 
 cleanup:
 
+  if (imageBuffer != (cl_mem) NULL)
+    ReleaseOpenCLMemObject(imageBuffer);
+  if (filteredImageBuffer != (cl_mem) NULL)
+    ReleaseOpenCLMemObject(filteredImageBuffer);
   if (denoiseKernel != (cl_kernel) NULL)
     ReleaseOpenCLKernel(denoiseKernel);
   if (queue != (cl_command_queue) NULL)

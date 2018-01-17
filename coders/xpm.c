@@ -17,7 +17,7 @@
 %                                 July 1992                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -366,6 +366,7 @@ static Image *ReadXPMImage(const ImageInfo *image_info,ExceptionInfo *exception)
     (void *(*)(void *)) NULL);
   if (AcquireImageColormap(image,image->colors,exception) == MagickFalse)
     {
+      xpm_colors=DestroySplayTree(xpm_colors);
       xpm_buffer=DestroyString(xpm_buffer);
       ThrowReaderException(ResourceLimitError,"MemoryAllocationFailed");
     }
@@ -430,7 +431,11 @@ static Image *ReadXPMImage(const ImageInfo *image_info,ExceptionInfo *exception)
       */
       status=SetImageExtent(image,image->columns,image->rows,exception);
       if (status == MagickFalse)
-        return(DestroyImageList(image));
+        {
+          xpm_colors=DestroySplayTree(xpm_colors);
+          xpm_buffer=DestroyString(xpm_buffer);
+          return(DestroyImageList(image));
+        }
       for (y=0; y < (ssize_t) image->rows; y++)
       {
         p=NextXPMLine(p);

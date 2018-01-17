@@ -17,7 +17,7 @@
 %                                 July 1999                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -536,7 +536,7 @@ static MagickBooleanType ClonePixelCacheRepository(
   CacheInfo *magick_restrict clone_info,CacheInfo *magick_restrict cache_info,
   ExceptionInfo *exception)
 {
-#define MaxCacheThreads  GetMagickResourceLimit(ThreadResource)
+#define MaxCacheThreads  ((size_t) GetMagickResourceLimit(ThreadResource))
 #define cache_number_threads(source,destination,chunk,multithreaded) \
   num_threads((multithreaded) == 0 ? 1 : \
     (((source)->type != MemoryCache) && \
@@ -581,7 +581,7 @@ static MagickBooleanType ClonePixelCacheRepository(
            (clone_info->type == MapCache)))
         {
           (void) memcpy(clone_info->pixels,cache_info->pixels,
-            cache_info->columns*cache_info->number_channels*cache_info->rows*
+            cache_info->number_channels*cache_info->columns*cache_info->rows*
             sizeof(*cache_info->pixels));
           if ((cache_info->metacontent_extent != 0) &&
               (clone_info->metacontent_extent != 0))
@@ -605,8 +605,8 @@ static MagickBooleanType ClonePixelCacheRepository(
   optimize=(cache_info->number_channels == clone_info->number_channels) &&
     (memcmp(cache_info->channel_map,clone_info->channel_map,length) == 0) ?
     MagickTrue : MagickFalse;
-  length=(size_t) MagickMin(cache_info->columns*cache_info->number_channels,
-    clone_info->columns*clone_info->number_channels);
+  length=(size_t) MagickMin(cache_info->number_channels*cache_info->columns,
+    clone_info->number_channels*clone_info->columns);
   status=MagickTrue;
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
   #pragma omp parallel for schedule(static,4) shared(status) \
@@ -1173,6 +1173,8 @@ MagickPrivate cl_mem GetAuthenticOpenCLBuffer(const Image *image,
       cache_info->opencl=AcquireMagickCLCacheInfo(device,cache_info->pixels,
         cache_info->length);
     }
+  if (cache_info->opencl != (MagickCLCacheInfo) NULL)
+    RetainOpenCLMemObject(cache_info->opencl->buffer);
   UnlockSemaphoreInfo(cache_info->semaphore);
   if (cache_info->opencl == (MagickCLCacheInfo) NULL)
     return((cl_mem) NULL);
@@ -3430,6 +3432,7 @@ static MagickBooleanType OpenPixelCache(Image *image,const MapMode mode,
     message[MagickPathExtent];
 
   const char
+    *hosts,
     *type;
 
   MagickBooleanType
@@ -3520,11 +3523,12 @@ static MagickBooleanType OpenPixelCache(Image *image,const MapMode mode,
     status=MagickFalse;
   length=number_pixels*(cache_info->number_channels*sizeof(Quantum)+
     cache_info->metacontent_extent);
-  if ((status != MagickFalse) && (length == (MagickSizeType) ((size_t) length)))
+  if ((status != MagickFalse) &&
+      (length == (MagickSizeType) ((size_t) length)) &&
+      ((cache_info->type == UndefinedCache) || (cache_info->type == MemoryCache)))
     {
       status=AcquireMagickResource(MemoryResource,cache_info->length);
-      if (((cache_info->type == UndefinedCache) && (status != MagickFalse)) ||
-          (cache_info->type == MemoryCache))
+      if (status != MagickFalse)
         {
           status=MagickTrue;
           if (cache_anonymous_memory <= 0)
@@ -3576,19 +3580,18 @@ static MagickBooleanType OpenPixelCache(Image *image,const MapMode mode,
               return(status == 0 ? MagickFalse : MagickTrue);
             }
         }
-      RelinquishMagickResource(MemoryResource,cache_info->length);
     }
-  /*
-    Create pixel cache on disk.
-  */
   status=AcquireMagickResource(DiskResource,cache_info->length);
-  if ((status == MagickFalse) || (cache_info->type == DistributedCache))
+  hosts=(const char *) GetImageRegistry(StringRegistryType,"cache:hosts",
+    exception);
+  if ((status == MagickFalse) && (hosts != (const char *) NULL))
     {
       DistributeCacheInfo
         *server_info;
 
-      if (cache_info->type == DistributedCache)
-        RelinquishMagickResource(DiskResource,cache_info->length);
+      /*
+        Distribute the pixel cache to a remote server.
+      */
       server_info=AcquireDistributeCacheInfo(exception);
       if (server_info != (DistributeCacheInfo *) NULL)
         {
@@ -3638,7 +3641,17 @@ static MagickBooleanType OpenPixelCache(Image *image,const MapMode mode,
               return(status == 0 ? MagickFalse : MagickTrue);
             }
         }
-      RelinquishMagickResource(DiskResource,cache_info->length);
+      cache_info->type=UndefinedCache;
+      (void) ThrowMagickException(exception,GetMagickModule(),CacheError,
+        "CacheResourcesExhausted","`%s'",image->filename);
+      return(MagickFalse);
+    }
+  /*
+    Create pixel cache on disk.
+  */
+  if (status == MagickFalse)
+    {
+      cache_info->type=UndefinedCache;
       (void) ThrowMagickException(exception,GetMagickModule(),CacheError,
         "CacheResourcesExhausted","`%s'",image->filename);
       return(MagickFalse);
@@ -3724,7 +3737,6 @@ static MagickBooleanType OpenPixelCache(Image *image,const MapMode mode,
               return(status == 0 ? MagickFalse : MagickTrue);
             }
         }
-      RelinquishMagickResource(MapResource,cache_info->length);
     }
   status=MagickTrue;
   if ((source_info.storage_class != UndefinedClass) && (mode != ReadMode))
@@ -3827,11 +3839,18 @@ MagickExport MagickBooleanType PersistPixelCache(Image *image,
       if (OpenPixelCache(image,ReadMode,exception) == MagickFalse)
         return(MagickFalse);
       *offset+=cache_info->length+page_size-(cache_info->length % page_size);
-      return(MagickTrue);
+      return(SyncImagePixelCache(image,exception));
     }
   /*
     Clone persistent pixel cache.
   */
+  status=AcquireMagickResource(DiskResource,cache_info->length);
+  if (status == MagickFalse)
+    {
+      (void) ThrowMagickException(exception,GetMagickModule(),CacheError,
+        "CacheResourcesExhausted","`%s'",image->filename);
+      return(MagickFalse);
+    }
   clone_info=(CacheInfo *) ClonePixelCache(cache_info);
   clone_info->type=DiskCache;
   (void) CopyMagickString(clone_info->cache_filename,filename,MagickPathExtent);
@@ -3841,8 +3860,8 @@ MagickExport MagickBooleanType PersistPixelCache(Image *image,
   clone_info->alpha_trait=cache_info->alpha_trait;
   clone_info->read_mask=cache_info->read_mask;
   clone_info->write_mask=cache_info->write_mask;
-  clone_info->rows=cache_info->rows;
   clone_info->columns=cache_info->columns;
+  clone_info->rows=cache_info->rows;
   clone_info->number_channels=cache_info->number_channels;
   clone_info->metacontent_extent=cache_info->metacontent_extent;
   clone_info->mode=PersistMode;
@@ -5493,7 +5512,7 @@ static MagickBooleanType WritePixelCachePixels(
       {
         (void) memcpy(q,p,(size_t) length);
         p+=cache_info->number_channels*nexus_info->region.width;
-        q+=cache_info->columns*cache_info->number_channels;
+        q+=cache_info->number_channels*cache_info->columns;
       }
       break;
     }

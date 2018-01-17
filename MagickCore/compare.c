@@ -17,7 +17,7 @@
 %                               December 2003                                 %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -319,7 +319,6 @@ MagickExport Image *CompareImages(Image *image,const Image *reconstruct_image,
   image_view=DestroyCacheView(image_view);
   (void) CompositeImage(difference_image,highlight_image,image->compose,
     MagickTrue,0,0,exception);
-  (void) SetImageAlphaChannel(difference_image,OffAlphaChannel,exception);
   highlight_image=DestroyImage(highlight_image);
   if (status == MagickFalse)
     difference_image=DestroyImage(difference_image);
@@ -384,7 +383,8 @@ static MagickBooleanType GetAbsoluteDistortion(const Image *image,
     Compute the absolute difference in pixels between two images.
   */
   status=MagickTrue;
-  fuzz=GetFuzzyColorDistance(image,reconstruct_image);
+  fuzz=MagickMin(GetPixelChannels(image),GetPixelChannels(reconstruct_image))*
+    GetFuzzyColorDistance(image,reconstruct_image);
   rows=MagickMax(image->rows,reconstruct_image->rows);
   columns=MagickMax(image->columns,reconstruct_image->columns);
   image_view=AcquireVirtualCacheView(image,exception);
@@ -420,6 +420,7 @@ static MagickBooleanType GetAbsoluteDistortion(const Image *image,
     {
       double
         Da,
+        distance,
         Sa;
 
       MagickBooleanType
@@ -435,12 +436,13 @@ static MagickBooleanType GetAbsoluteDistortion(const Image *image,
           continue;
         }
       difference=MagickFalse;
+      distance=0.0;
       Sa=QuantumScale*GetPixelAlpha(image,p);
       Da=QuantumScale*GetPixelAlpha(reconstruct_image,q);
       for (i=0; i < (ssize_t) GetPixelChannels(image); i++)
       {
         double
-          distance;
+          pixel;
 
         PixelChannel channel = GetPixelChannelChannel(image,i);
         PixelTrait traits = GetPixelChannelTraits(image,channel);
@@ -451,10 +453,11 @@ static MagickBooleanType GetAbsoluteDistortion(const Image *image,
             ((reconstruct_traits & UpdatePixelTrait) == 0))
           continue;
         if (channel == AlphaPixelChannel)
-          distance=(double) p[i]-GetPixelChannel(reconstruct_image,channel,q);
+          pixel=(double) p[i]-GetPixelChannel(reconstruct_image,channel,q);
         else
-          distance=Sa*p[i]-Da*GetPixelChannel(reconstruct_image,channel,q);
-        if ((distance*distance) > fuzz)
+          pixel=Sa*p[i]-Da*GetPixelChannel(reconstruct_image,channel,q);
+        distance+=pixel*pixel;
+        if (distance > fuzz)
           {
             channel_distortion[i]++;
             difference=MagickTrue;
@@ -1039,10 +1042,8 @@ static MagickBooleanType GetNormalizedCrossCorrelationDistortion(
           q+=GetPixelChannels(reconstruct_image);
           continue;
         }
-      Sa=QuantumScale*(image->alpha_trait != UndefinedPixelTrait ?
-        GetPixelAlpha(image,p) : OpaqueAlpha);
-      Da=QuantumScale*(reconstruct_image->alpha_trait != UndefinedPixelTrait ?
-        GetPixelAlpha(reconstruct_image,q) : OpaqueAlpha);
+      Sa=QuantumScale*GetPixelAlpha(image,p);
+      Da=QuantumScale*GetPixelAlpha(reconstruct_image,q);
       for (i=0; i < (ssize_t) GetPixelChannels(image); i++)
       {
         PixelChannel channel = GetPixelChannelChannel(image,i);
@@ -2312,7 +2313,6 @@ MagickExport Image *SimilarityImage(const Image *image,const Image *reference,
       }
   }
   similarity_view=DestroyCacheView(similarity_view);
-  (void) SetImageAlphaChannel(similarity_image,OffAlphaChannel,exception);
   if (status == MagickFalse)
     similarity_image=DestroyImage(similarity_image);
   return(similarity_image);

@@ -17,7 +17,7 @@
 %                                 July 2016                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -216,9 +216,11 @@ static Image *ReadPGXImage(const ImageInfo *image_info,ExceptionInfo *exception)
     pixels=(const unsigned char *) ReadBlobStream(image,length,
       GetQuantumPixels(quantum_info),&count);
     if (count != (ssize_t) length)
-      ThrowReaderException(CorruptImageError,"UnableToReadImageData");
+      break;
     (void) ImportQuantumPixels(image,(CacheView *) NULL,quantum_info,
       GrayQuantum,pixels,exception);
+    if (status == MagickFalse)
+      break;
     if (SyncAuthenticPixels(image,exception) == MagickFalse)
       break;
     if (SetImageProgress(image,LoadImageTag,(MagickOffsetType) y,image->rows) == MagickFalse)

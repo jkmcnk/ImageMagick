@@ -1,4 +1,4 @@
-#  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization
+#  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization
 #  dedicated to making software imaging solutions freely available.
 #
 #  You may not use this file except in compliance with the License.  You may
@@ -70,7 +70,7 @@ sub AutodetectWin32gcc {
       push @i, catfile($dirpath,'..','..','include','ImageMagick');
       push @i, catfile($dirpath,'..','..','..','include');
       push @i, catfile($dirpath,'..','..','..','include','ImageMagick');
-      foreach (@i) { push @incdir, $_ if (-e "$_/magick/MagickCore.h") };
+      foreach (@i) { push @incdir, $_ if (-e "$_/MagickCore/MagickCore.h") };
     }
   };
 

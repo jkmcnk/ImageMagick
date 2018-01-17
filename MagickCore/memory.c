@@ -17,7 +17,7 @@
 %                                 July 1998                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -636,7 +636,7 @@ MagickExport MemoryInfo *AcquireVirtualMemory(const size_t count,
       if (memory_info->blob != NULL)
         memory_info->type=AlignedVirtualMemory;
     }
-  else
+  if (memory_info->blob == NULL)
     {
       /*
         Acquire anonymous memory map.

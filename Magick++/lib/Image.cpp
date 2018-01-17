@@ -372,16 +372,6 @@ size_t Magick::Image::animationIterations(void) const
   return(constImage()->iterations);
 }
 
-void Magick::Image::attenuate(const double attenuate_)
-{
-  char
-    value[MagickPathExtent];
-
-  modifyImage();
-  FormatLocaleString(value,MagickPathExtent,"%.20g",attenuate_);
-  (void) SetImageArtifact(image(),"attenuate",value);
-}
-
 void Magick::Image::backgroundColor(const Color &backgroundColor_)
 {
   modifyImage();
@@ -998,7 +988,7 @@ void Magick::Image::highlightColor(const Color color_)
     value;
 
   value=color_;
-  artifact("highlight-color",value);
+  artifact("compare:highlight-color",value);
 }
 
 void Magick::Image::iccColorProfile(const Magick::Blob &colorProfile_)
@@ -1133,7 +1123,7 @@ void Magick::Image::lowlightColor(const Color color_)
     value;
 
   value=color_;
-  artifact("lowlight-color",value);
+  artifact("compare:lowlight-color",value);
 }
 
 void Magick::Image::magick(const std::string &magick_)
@@ -1160,6 +1150,15 @@ std::string Magick::Image::magick(void) const
     return(std::string(constImage()->magick));
 
   return(constOptions()->magick());
+}
+
+void Magick::Image::masklightColor(const Color color_)
+{
+  std::string
+    value;
+
+  value=color_;
+  artifact("compare:masklight-color",value);
 }
 
 double Magick::Image::meanErrorPerPixel(void) const
@@ -1781,26 +1780,26 @@ void Magick::Image::adaptiveThreshold(const size_t width_,const size_t height_,
   ThrowImageException;
 }
 
-void Magick::Image::addNoise(const NoiseType noiseType_)
+void Magick::Image::addNoise(const NoiseType noiseType_,const double attenuate_)
 {
   MagickCore::Image
     *newImage;
 
   GetPPException;
-  newImage=AddNoiseImage(constImage(),noiseType_,1.0,exceptionInfo);
+  newImage=AddNoiseImage(constImage(),noiseType_,attenuate_,exceptionInfo);
   replaceImage(newImage);
   ThrowImageException;
 }
 
 void Magick::Image::addNoiseChannel(const ChannelType channel_,
-  const NoiseType noiseType_)
+  const NoiseType noiseType_,const double attenuate_)
 {
   MagickCore::Image
     *newImage;
 
   GetPPException;
   GetAndSetPPChannelMask(channel_);
-  newImage=AddNoiseImage(constImage(),noiseType_,1.0,exceptionInfo);
+  newImage=AddNoiseImage(constImage(),noiseType_,attenuate_,exceptionInfo);
   RestorePPChannelMask;
   replaceImage(newImage);
   ThrowImageException;
@@ -5078,6 +5077,7 @@ void Magick::Image::read(MagickCore::Image *image,
       if (!quiet())
         throwExceptionExplicit(MagickCore::ImageWarning,
           "No image was loaded.");
+      return;
     }
   ThrowImageException;
 }

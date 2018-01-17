@@ -17,7 +17,7 @@
 %                                 July 1992                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -1035,7 +1035,7 @@ static Image *ReadPICTImage(const ImageInfo *image_info,
                     break;
               }
             else
-              for (j=0; j < (int) height; j++)
+              for (i=0; i < (int) height; i++)
                 if (length > 200)
                   {
                     for (j=0; j < (ssize_t) ReadBlobMSBShort(image); j++)
@@ -1125,7 +1125,7 @@ static Image *ReadPICTImage(const ImageInfo *image_info,
             tile_image=CloneImage(image,1UL*(frame.right-frame.left),
               1UL*(frame.bottom-frame.top),MagickTrue,exception);
             if (tile_image == (Image *) NULL)
-              return((Image *) NULL);
+              ThrowReaderException(CorruptImageError,"ImproperImageHeader");
             if ((code == 0x9a) || (code == 0x9b) ||
                 ((bytes_per_line & 0x8000) != 0))
               {

@@ -3,28 +3,37 @@
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%                         H   H  EEEEE  IIIII   CCCC                          %
-%                         H   H  E        I    C                              %
-%                         HHHHH  EEE      I    C                              %
-%                         H   H  E        I    C                              %
-%                         H   H  EEEEE  IIIII   CCCC                          %
+%                        H   H  EEEEE  IIIII   CCCC                           %
+%                        H   H  E        I    C                               %
+%                        HHHHH  EEE      I    C                               %
+%                        H   H  E        I    C                               %
+%                        H   H  EEEEE  IIIII   CCCC                           %
 %                                                                             %
 %                                                                             %
 %                         Read/Write Heic Image Format                        %
 %                                                                             %
-%                               (c) Yandex LLC                                %
+%                              Software Design                                %
 %                               Anton Kortunov                                %
-%                                October 2017                                 %
+%                               December 2017                                 %
 %                                                                             %
 %                                                                             %
+%                      Copyright 2017-2018 YANDEX LLC.                        %
+%                                                                             %
+%  You may not use this file except in compliance with the License.  You may  %
+%  obtain a copy of the License at                                            %
+%                                                                             %
+%    https://www.imagemagick.org/script/license.php                           %
+%                                                                             %
+%  Unless required by applicable law or agreed to in writing, software        %
+%  distributed under the License is distributed on an "AS IS" BASIS,          %
+%  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   %
+%  See the License for the specific language governing permissions and        %
+%  limitations under the License.                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 %
 */
-
-// TODO make autodetect in configure scripts
-#define MAGICKCORE_HEIC_DELEGATE 1
 
 /*
   Include declarations.
@@ -35,6 +44,7 @@
 #include "MagickCore/blob-private.h"
 #include "MagickCore/client.h"
 #include "MagickCore/colorspace-private.h"
+#include "MagickCore/property.h"
 #include "MagickCore/display.h"
 #include "MagickCore/exception.h"
 #include "MagickCore/exception-private.h"
@@ -45,6 +55,7 @@
 #include "MagickCore/monitor.h"
 #include "MagickCore/monitor-private.h"
 #include "MagickCore/montage.h"
+#include "MagickCore/transform.h"
 #include "MagickCore/memory_.h"
 #include "MagickCore/option.h"
 #include "MagickCore/pixel-accessor.h"
@@ -54,8 +65,8 @@
 #include "MagickCore/string-private.h"
 #include "MagickCore/module.h"
 #include "MagickCore/utility.h"
-#include "MagickCore/xwindow.h"
-#include "MagickCore/xwindow-private.h"
+//#include "MagickCore/xwindow.h"
+//#include "MagickCore/xwindow-private.h"
 #if defined(MAGICKCORE_HEIC_DELEGATE)
 #include <libde265/de265.h>
 #endif
@@ -66,7 +77,7 @@
 #if defined(MAGICKCORE_HEIC_DELEGATE)
 /*
 static MagickBooleanType
-  WriteWEBPImage(const ImageInfo *,Image *);
+  WriteHEICImage(const ImageInfo *,Image *);
 */
 #endif
 
@@ -114,6 +125,9 @@ typedef struct _HEICItemProp
 typedef struct _HEICGrid
 {
   unsigned int
+    id;
+
+  unsigned int
     rowsMinusOne;
 
   unsigned int
@@ -155,54 +169,147 @@ typedef struct _HEICImageContext
   de265_decoder_context
     *h265Ctx;
 
-  unsigned int exifSize;
-  uint8_t *exif;
-  
   Image
     *tmp;
 } HEICImageContext;
 
+typedef struct _DataBuffer {
+    unsigned char
+        *data;
+
+    off_t
+        pos;
+
+    size_t
+        size;
+} DataBuffer;
+
+
 #define ATOM(a,b,c,d) ((a << 24) + (b << 16) + (c << 8) + d)
-#define ThrowAndReturn(msg) ThrowFileException(exception, CorruptImageError, "Bad image: " # msg, __func__);
-
-inline static char* intToAtom(unsigned int data)
-{
-  static char atom[5];
-
-  atom[0] = (data >> 24) & 0xff;
-  atom[1] = (data >> 16) & 0xff;
-  atom[2] = (data >>  8) & 0xff;
-  atom[3] = (data      ) & 0xff;
-  atom[4] = '\0';
-
-  return atom;
+#define ThrowAndReturn(msg) { \
+    ThrowFileException(exception, CorruptImageError, "Bad image: " # msg, __func__); \
+    return MagickFalse; \
 }
 
+inline static unsigned int readInt(const unsigned char* data)
+{
+  unsigned int val = 0;
+
+  val += (unsigned char)(data[0]) << 24;
+  val += (unsigned char)(data[1]) << 16;
+  val += (unsigned char)(data[2]) << 8;
+  val += (unsigned char)(data[3]);
+
+  return val;
+}
+
+inline static MagickSizeType DBChop(DataBuffer *head, DataBuffer *db, size_t size)
+{
+  if (size > (db->size - db->pos)) {
+    return MagickFalse;
+  }
+
+  head->data = db->data + db->pos;
+  head->pos = 0;
+  head->size = size;
+
+  db->pos += size;
+
+  return MagickTrue;
+}
+
+inline static uint32_t DBReadUInt(DataBuffer *db)
+{
+  uint32_t val = 0;
+
+  if (db->size - db->pos < 4) {
+    db->pos = db->size;
+    return 0;
+  }
+
+  val  = (unsigned char)(db->data[db->pos+0]) << 24;
+  val += (unsigned char)(db->data[db->pos+1]) << 16;
+  val += (unsigned char)(db->data[db->pos+2]) << 8;
+  val += (unsigned char)(db->data[db->pos+3]);
+
+  db->pos += 4;
+
+  return val;
+}
+
+inline static uint16_t DBReadUShort(DataBuffer *db)
+{
+  uint16_t val = 0;
+
+  if (db->size - db->pos < 2) {
+    db->pos = db->size;
+    return 0;
+  }
+
+  val  = (unsigned char)(db->data[db->pos+0]) << 8;
+  val += (unsigned char)(db->data[db->pos+1]);
+
+  db->pos += 2;
+
+  return val;
+}
+
+inline static uint8_t DBReadUChar(DataBuffer *db)
+{
+  uint8_t val;
+
+  if (db->size - db->pos < 2) {
+    db->pos = db->size;
+    return 0;
+  }
+
+  val = (unsigned char)(db->data[db->pos]);
+  db->pos += 1;
+
+  return val;
+}
+
+inline static size_t DBGetSize(DataBuffer *db)
+{
+  return db->size - db->pos;
+}
+
+inline static void DBSkip(DataBuffer *db, size_t skip)
+{
+  if (db->pos + skip > db->size)
+  {
+    db->pos = db->size;
+  } else {
+    db->pos += skip;
+  }
+}
+
+
 /*
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %                                                                             %
-   %                                                                             %
-   %                                                                             %
-   %   I s H E I C                                                               %
-   %                                                                             %
-   %                                                                             %
-   %                                                                             %
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %
-   %  IsHEIC() returns MagickTrue if the image format type, identified by the
-   %  magick string, is Heic.
-   %
-   %  The format of the IsHEIC method is:
-   %
-   %      MagickBooleanType IsHEIC(const unsigned char *magick,const size_t length)
-   %
-   %  A description of each parameter follows:
-   %
-   %    o magick: compare image format pattern against these bytes.
-   %
-   %    o length: Specifies the length of the magick string.
-   %
-   */
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%   I s H E I C                                                               %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  IsHEIC() returns MagickTrue if the image format type, identified by the
+%  magick string, is Heic.
+%
+%  The format of the IsHEIC method is:
+%
+%      MagickBooleanType IsHEIC(const unsigned char *magick,const size_t length)
+%
+%  A description of each parameter follows:
+%
+%    o magick: compare image format pattern against these bytes.
+%
+%    o length: Specifies the length of the magick string.
+%
+*/
 static MagickBooleanType IsHEIC(const unsigned char *magick,const size_t length)
 {
   if (length < 12)
@@ -212,43 +319,41 @@ static MagickBooleanType IsHEIC(const unsigned char *magick,const size_t length)
   return(MagickFalse);
 }
 
-static MagickSizeType ParseAtom(Image *image, MagickSizeType size,
+static MagickBooleanType ParseAtom(Image *image, DataBuffer *db,
     HEICImageContext *ctx, ExceptionInfo *exception);
 
-static MagickBooleanType ParseFullBox(Image *image, MagickSizeType size,
+static MagickBooleanType ParseFullBox(Image *image, DataBuffer *db,
     unsigned int atom, HEICImageContext *ctx, ExceptionInfo *exception)
 {
   unsigned int
     version, flags, i;
 
-  flags = ReadBlobMSBLong(image);
+  flags = DBReadUInt(db);
   version = flags >> 24;
   flags &= 0xffffff;
 
   (void) flags;
   (void) version;
 
-  if (size < 4) {
+  if (DBGetSize(db) < 4) {
     ThrowAndReturn("atom is too short");
   }
 
-  size -= 4;
-
-  for (i = 0; i < MAX_ATOMS_IN_BOX && size > 0; i++) {
-    size = ParseAtom(image, size, ctx, exception);
+  for (i = 0; i < MAX_ATOMS_IN_BOX && DBGetSize(db) > 0; i++) {
+    ParseAtom(image, db, ctx, exception);
   }
 
   return MagickTrue;
 }
 
-static MagickBooleanType ParseBox(Image *image, MagickSizeType size,
+static MagickBooleanType ParseBox(Image *image, DataBuffer *db,
     unsigned int atom, HEICImageContext *ctx, ExceptionInfo *exception)
 {
   unsigned int
     i;
 
-  for (i = 0; i < MAX_ATOMS_IN_BOX && size > 0; i++) {
-    size = ParseAtom(image, size, ctx, exception);
+  for (i = 0; i < MAX_ATOMS_IN_BOX && DBGetSize(db) > 0; i++) {
+    ParseAtom(image, db, ctx, exception);
   }
 
   return MagickTrue;
@@ -314,24 +419,24 @@ static MagickBooleanType ParseHvcCAtom(HEICItemProp *prop, ExceptionInfo *except
   return MagickTrue;
 }
 
-static MagickBooleanType ParseIpcoAtom(Image *image, MagickSizeType size,
+static MagickBooleanType ParseIpcoAtom(Image *image, DataBuffer *db,
     HEICImageContext *ctx, ExceptionInfo *exception)
 {
   unsigned int
     length, atom;
+
   HEICItemProp
     *prop;
-  ssize_t
-    count;
-
 
   /*
      property indicies starts from 1
-     */
-  for (ctx->itemPropsCount = 1; ctx->itemPropsCount < MAX_ITEM_PROPS && size > 8; ctx->itemPropsCount++) {
+  */
+  for (ctx->itemPropsCount = 1; ctx->itemPropsCount < MAX_ITEM_PROPS && DBGetSize(db) > 8; ctx->itemPropsCount++) {
+    DataBuffer
+      propDb;
 
-    length = ReadBlobMSBLong(image);
-    atom = ReadBlobMSBLong(image);
+    length = DBReadUInt(db);
+    atom = DBReadUInt(db);
 
     if (ctx->itemPropsCount == MAX_ITEM_PROPS) {
       ThrowAndReturn("too many item properties");
@@ -341,54 +446,46 @@ static MagickBooleanType ParseIpcoAtom(Image *image, MagickSizeType size,
     prop->type = atom;
     prop->size = length - 8;
     prop->data = AcquireMagickMemory(prop->size);
-    count = ReadBlob(image, prop->size, prop->data);
-    if (count != prop->size) {
+    if (DBChop(&propDb, db, prop->size) != MagickTrue) {
       ThrowAndReturn("incorrect read size");
     }
+    memcpy(prop->data, propDb.data, prop->size);
 
     switch (prop->type) {
       case ATOM('h', 'v', 'c', 'C'):
         ParseHvcCAtom(prop, exception);
         break;
+      default:
+        break;
     }
-
-    size -= length;
-  }
-
-  if (size > 0) {
-    DiscardBlobBytes(image, size);
   }
 
   return MagickTrue;
 }
 
-static MagickBooleanType ParseIinfAtom(Image *image, MagickSizeType size,
+static MagickBooleanType ParseIinfAtom(Image *image, DataBuffer *db,
     HEICImageContext *ctx, ExceptionInfo *exception)
 {
   unsigned int
     version, flags, count, i;
 
-  if (size < 4) {
+  if (DBGetSize(db) < 4) {
     ThrowAndReturn("atom is too short");
   }
 
-  flags = ReadBlobMSBLong(image);
+  flags = DBReadUInt(db);
   version = flags >> 24;
   flags = 0xffffff;
 
-  size -= 4;
-
   if (version == 0) {
-    count = ReadBlobMSBShort(image);
-    size -= 2;
+   count = DBReadUShort(db);
   } else {
-    count = ReadBlobMSBLong(image);
-    size -= 4;
+    count = DBReadUInt(db);
   }
 
   /*
      item indicies starts from 1
-     */
+  */
   ctx->idsCount = count;
   ctx->itemInfo = (HEICItemInfo *)AcquireMagickMemory(sizeof(HEICItemInfo)*(count+1));
   if (ctx->itemInfo == (HEICItemInfo *) NULL)
@@ -398,88 +495,72 @@ static MagickBooleanType ParseIinfAtom(Image *image, MagickSizeType size,
 
   ResetMagickMemory(ctx->itemInfo, 0, sizeof(HEICItemInfo)*(count+1));
 
-  for (i = 0; i < count && size > 0; i++)
+  for (i = 0; i < count && DBGetSize(db) > 0; i++)
   {
-    size = ParseAtom(image, size, ctx, exception);
-  }
-
-  if (size > 0) {
-    DiscardBlobBytes(image, size);
+    ParseAtom(image, db, ctx, exception);
   }
 
   return MagickTrue;
 }
 
-static MagickBooleanType ParseInfeAtom(Image *image, MagickSizeType size,
+static MagickBooleanType ParseInfeAtom(Image *image, DataBuffer *db,
     HEICImageContext *ctx, ExceptionInfo *exception)
 {
   unsigned int
     version, flags, id, type;
 
-  if (size < 9) {
+  if (DBGetSize(db) < 9) {
     ThrowAndReturn("atom is too short");
   }
 
-  flags = ReadBlobMSBLong(image);
+  flags = DBReadUInt(db);
   version = flags >> 24;
   flags = 0xffffff;
-
-  size -= 4;
 
   if (version != 2) {
     ThrowAndReturn("unsupported infe atom version");
   }
 
-  id = ReadBlobMSBShort(image);
-  DiscardBlobBytes(image, 2); // item protection index
-  type = ReadBlobMSBLong(image);
-  size -= 8;
+  id = DBReadUShort(db);
+  DBSkip(db, 2); // item protection index
+  type = DBReadUInt(db);
 
   /*
      item indicies starts from 1
-     */
+  */
   if (id > ctx->idsCount) {
     ThrowAndReturn("item id is incorrect");
   }
 
   ctx->itemInfo[id].type = type;
 
-  if (size > 0) {
-    DiscardBlobBytes(image, size);
-  }
-
   return MagickTrue;
 }
 
-static MagickBooleanType ParseIpmaAtom(Image *image, MagickSizeType size,
+static MagickBooleanType ParseIpmaAtom(Image *image, DataBuffer *db,
     HEICImageContext *ctx, ExceptionInfo *exception)
 {
   unsigned int
     version, flags, count, i;
 
-  if (size < 9) {
+  if (DBGetSize(db) < 9) {
     ThrowAndReturn("atom is too short");
   }
 
-  flags = ReadBlobMSBLong(image);
+  flags = DBReadUInt(db);
   version = flags >> 24;
   flags = 0xffffff;
 
-  size -= 4;
+  count = DBReadUInt(db);
 
-  count = ReadBlobMSBLong(image);
-  size -= 4;
-
-  for (i = 0; i < count && size > 2; i++) {
+  for (i = 0; i < count && DBGetSize(db) > 2; i++) {
     unsigned int
       id, assoc_count, j;
 
     if (version < 1) {
-      id = ReadBlobMSBShort(image);
-      size -= 2;
+      id = DBReadUShort(db);
     } else {
-      id = ReadBlobMSBLong(image);
-      size -= 4;
+      id = DBReadUInt(db);
     }
 
     /*
@@ -489,75 +570,63 @@ static MagickBooleanType ParseIpmaAtom(Image *image, MagickSizeType size,
       ThrowAndReturn("item id is incorrect");
     }
 
-    assoc_count = ReadBlobByte(image);
-    size -= 1;
+    assoc_count = DBReadUChar(db);
 
     if (assoc_count > MAX_ASSOCS_COUNT) {
       ThrowAndReturn("too many associations");
     }
 
-    for (j = 0; j < assoc_count && size > 0; j++) {
-      ctx->itemInfo[id].assocs[j] = ReadBlobByte(image);
-      size -= 1;
+    for (j = 0; j < assoc_count && DBGetSize(db) > 0; j++) {
+      ctx->itemInfo[id].assocs[j] = DBReadUChar(db);
     }
 
     ctx->itemInfo[id].assocsCount = j;
   }
 
-  if (size > 0) {
-    DiscardBlobBytes(image, size);
-  }
-
   return MagickTrue;
 }
 
-static MagickBooleanType ParseIlocAtom(Image *image, MagickSizeType size,
+static MagickBooleanType ParseIlocAtom(Image *image, DataBuffer *db,
     HEICImageContext *ctx, ExceptionInfo *exception)
 {
   unsigned int
     version, flags, tmp, count, i;
 
-  if (size < 9) {
+  if (DBGetSize(db) < 9) {
     ThrowAndReturn("atom is too short");
   }
 
-  flags = ReadBlobMSBLong(image);
+  flags = DBReadUInt(db);
   version = flags >> 24;
   flags = 0xffffff;
 
-  size -= 4;
-
-  tmp = ReadBlobByte(image);
+  tmp = DBReadUChar(db);
   if (tmp != 0x44) {
     ThrowAndReturn("only offset_size=4 and length_size=4 are supported");
   }
-  tmp = ReadBlobByte(image);
+  tmp = DBReadUChar(db);
   if (tmp != 0x00) {
     ThrowAndReturn("only base_offset_size=0 and index_size=0 are supported");
   }
-  size -= 2;
 
   if (version < 2) {
-    count = ReadBlobMSBShort(image);
-    size -= 2;
+    count = DBReadUShort(db);
   } else {
-    count = ReadBlobMSBLong(image);
-    size -= 4;
+    count = DBReadUInt(db);
   }
 
-  for (i = 0; i < count && size > 2; i++) {
+  for (i = 0; i < count && DBGetSize(db) > 2; i++) {
     unsigned int
       id, ext_count;
 
     HEICItemInfo
       *item;
 
-    id = ReadBlobMSBShort(image);
-    size -= 2;
+    id = DBReadUShort(db);
 
     /*
        item indicies starts from 1
-       */
+    */
     if (id > ctx->idsCount) {
       ThrowAndReturn("item id is incorrect");
     }
@@ -565,36 +634,113 @@ static MagickBooleanType ParseIlocAtom(Image *image, MagickSizeType size,
     item = &ctx->itemInfo[id];
 
     if (version == 1 || version == 2) {
-      item->dataSource = ReadBlobMSBShort(image);
-      size -= 2;
+      item->dataSource = DBReadUShort(db);
     }
 
     /*
      * data ref index
      */
-    DiscardBlobBytes(image, 2);
-    size -= 2;
-
-    ext_count = ReadBlobMSBShort(image);
-    size -= 2;
+    DBSkip(db, 2);
+    ext_count = DBReadUShort(db);
 
     if (ext_count != 1) {
       ThrowAndReturn("only one excention per item is supported");
     }
 
-    item->offset = ReadBlobMSBLong(image);
-    item->size = ReadBlobMSBLong(image);
-    size -= 8;
-  }
-
-  if (size > 0) {
-    DiscardBlobBytes(image, size);
+    item->offset = DBReadUInt(db);
+    item->size = DBReadUInt(db);
   }
 
   return MagickTrue;
 }
 
-static MagickSizeType ParseAtom(Image *image, MagickSizeType size,
+static MagickBooleanType ParseAtom(Image *image, DataBuffer *db,
+    HEICImageContext *ctx, ExceptionInfo *exception)
+{
+  DataBuffer
+    atomDb;
+
+  MagickBooleanType
+    status;
+
+  MagickSizeType
+    atom_size;
+
+  unsigned int
+    atom;
+
+  if (DBGetSize(db) < 8)
+  {
+    ThrowAndReturn("atom is too short");
+  }
+
+  atom_size = DBReadUInt(db);
+  atom = DBReadUInt(db);
+
+  if (atom_size == 1) {
+    /* Only 32 bit atom size are supported */
+    DBReadUInt(db);
+    atom_size = DBReadUInt(db);
+  }
+
+  if (atom_size - 8 > DBGetSize(db))
+  {
+    ThrowAndReturn("atom is too short");
+  }
+
+  if (DBChop(&atomDb, db, atom_size - 8) != MagickTrue)
+  {
+      ThrowAndReturn("unable to read atom");
+  }
+
+  status = MagickTrue;
+
+  switch (atom)
+  {
+    case ATOM('i', 'r', 'e', 'f'):
+      status = ParseFullBox(image, &atomDb, atom, ctx, exception);
+      break;
+    case ATOM('i', 'p', 'r', 'p'):
+      status = ParseBox(image, &atomDb, atom, ctx, exception);
+      break;
+    case ATOM('i', 'i', 'n', 'f'):
+      status = ParseIinfAtom(image, &atomDb, ctx, exception);
+      break;
+    case ATOM('i', 'n', 'f', 'e'):
+      status = ParseInfeAtom(image, &atomDb, ctx, exception);
+      break;
+    case ATOM('i', 'p', 'c', 'o'):
+      status = ParseIpcoAtom(image, &atomDb, ctx, exception);
+      break;
+    case ATOM('i', 'p', 'm', 'a'):
+      status = ParseIpmaAtom(image, &atomDb, ctx, exception);
+      break;
+    case ATOM('i', 'l', 'o', 'c'):
+      status = ParseIlocAtom(image, &atomDb, ctx, exception);
+      break;
+    case ATOM('i', 'd', 'a', 't'):
+      {
+        ctx->idatSize = atom_size - 8;
+        ctx->idat = AcquireMagickMemory(ctx->idatSize);
+        if (ctx->idat == NULL) {
+          ThrowAndReturn("unable to allocate memory");
+        }
+
+        memcpy(ctx->idat, atomDb.data, ctx->idatSize);
+      }
+      break;
+    default:
+      break;
+  }
+
+  if (status != MagickTrue)
+    ThrowAndReturn("atom parsing failed");
+
+  return status;
+}
+
+
+static MagickSizeType ParseRootAtom(Image *image, MagickSizeType size,
     HEICImageContext *ctx, ExceptionInfo *exception)
 {
   MagickBooleanType
@@ -608,7 +754,8 @@ static MagickSizeType ParseAtom(Image *image, MagickSizeType size,
 
   if (size < 8)
   {
-    ThrowAndReturn("atom is too short");
+    ThrowFileException(exception, CorruptImageError, "Bad image: atom is too short", __func__);
+    return -1;
   }
 
   atom_size = ReadBlobMSBLong(image);
@@ -619,11 +766,13 @@ static MagickSizeType ParseAtom(Image *image, MagickSizeType size,
     atom_size = ReadBlobMSBLong(image);
   }
 
+
   if (atom_size > size)
   {
-    ThrowAndReturn("atom is too short");
+    ThrowFileException(exception, CorruptImageError, "Bad image: atom is too short", __func__);
+    return -1;
   }
-  
+
   status = MagickTrue;
 
   switch (atom)
@@ -632,54 +781,48 @@ static MagickSizeType ParseAtom(Image *image, MagickSizeType size,
       DiscardBlobBytes(image, atom_size-8);
       break;
     case ATOM('m', 'e', 't', 'a'):
-    case ATOM('i', 'r', 'e', 'f'):
-      status = ParseFullBox(image, atom_size - 8, atom, ctx, exception);
-      break;
-    case ATOM('i', 'p', 'r', 'p'):
-      status = ParseBox(image, atom_size - 8, atom, ctx, exception);
-      break;
-    case ATOM('i', 'i', 'n', 'f'):
-      status = ParseIinfAtom(image, atom_size - 8, ctx, exception);
-      break;
-    case ATOM('i', 'n', 'f', 'e'):
-      status = ParseInfeAtom(image, atom_size - 8, ctx, exception);
-      break;
-    case ATOM('i', 'p', 'c', 'o'):
-      status = ParseIpcoAtom(image, atom_size - 8, ctx, exception);
-      break;
-    case ATOM('i', 'p', 'm', 'a'):
-      status = ParseIpmaAtom(image, atom_size - 8, ctx, exception);
-      break;
-    case ATOM('i', 'l', 'o', 'c'):
-      status = ParseIlocAtom(image, atom_size - 8, ctx, exception);
-      break;
-    case ATOM('i', 'd', 'a', 't'):
       {
-        ssize_t
+        DataBuffer
+          db;
+
+        size_t
           count;
-        ctx->idatSize = atom_size - 8;
-        ctx->idat = AcquireMagickMemory(ctx->idatSize);
-        if (ctx->idat == NULL) {
-          ThrowAndReturn("unable to allocate memory");
+
+        db.pos = 0;
+        db.size = atom_size - 8;
+        db.data = AcquireMagickMemory(db.size);
+        if (db.data == NULL) {
+          ThrowFileException(exception, CorruptImageError, "unable to allocate memory", __func__);
+          return -1;
         }
 
-        count = ReadBlob(image, ctx->idatSize, ctx->idat);
-        if (count != ctx->idatSize) {
-          ThrowAndReturn("unable to read idat");
+        count = ReadBlob(image, db.size, db.data);
+        if (count != db.size) {
+          RelinquishMagickMemory((void *)db.data);
+          ThrowFileException(exception, CorruptImageError, "Bad image: unable to read data", __func__);
+          return -1;
         }
+
+        /*
+         * Meta flags and version
+         */
+      //  DBSkip(&db, 4);
+        status = ParseFullBox(image, &db, atom, ctx, exception);
+        RelinquishMagickMemory((void *)db.data);
       }
       break;
     case ATOM('m', 'd', 'a', 't'):
       ctx->finished = MagickTrue;
       break;
     default:
-      //printf("skipping unknown atom %s with size %u\n", intToAtom(atom), atom_size);
       DiscardBlobBytes(image, atom_size-8);
       break;
   }
 
-  if (status != MagickTrue)
-    ThrowAndReturn("atom parsing failed");
+  if (status != MagickTrue) {
+    ThrowFileException(exception, CorruptImageError, "Bad image: atom parsing failed", __func__);
+    return -1;
+  }
 
   return size - atom_size;
 }
@@ -689,7 +832,7 @@ static MagickBooleanType decodeGrid(HEICImageContext *ctx, ExceptionInfo *except
   unsigned int
     i, flags;
 
-  for (i = 1; i < ctx->idsCount; i++) {
+  for (i = 1; i <= ctx->idsCount; i++) {
     HEICItemInfo
       *info = &ctx->itemInfo[i];
     if (info->type != ATOM('g','r','i','d'))
@@ -713,6 +856,8 @@ static MagickBooleanType decodeGrid(HEICImageContext *ctx, ExceptionInfo *except
 
     ctx->grid.imageWidth = (ctx->idat[4] << 8) + ctx->idat[5];
     ctx->grid.imageHeight = (ctx->idat[6] << 8) + ctx->idat[7];
+
+    ctx->grid.id = i;
 
     return MagickTrue;
   }
@@ -752,18 +897,30 @@ static MagickBooleanType decodeH265Image(Image *image, HEICImageContext *ctx, un
       goto err_out_free;
     }
 
-    if (ctx->itemProps[assoc].type != ATOM('h', 'v', 'c', 'C')) {
-      //TODO work with other property types
-      continue;
-    }
+    switch (ctx->itemProps[assoc].type) {
+      case ATOM('h', 'v', 'c', 'C'):
+        err = de265_push_data(ctx->h265Ctx, ctx->itemProps[assoc].data, ctx->itemProps[assoc].size, pos, (void*)2);
+        if (err != DE265_OK) {
+          ThrowFileException(exception, CorruptImageError,"Bad image: unable to push data", "decodeH265Image");
+          goto err_out_free;
+        }
 
-    err = de265_push_data(ctx->h265Ctx, ctx->itemProps[assoc].data, ctx->itemProps[assoc].size, pos, (void*)2);
-    if (err != DE265_OK) {
-      ThrowFileException(exception, CorruptImageError,"Bad image: unable to push data", "decodeH265Image");
-      goto err_out_free;
-    }
+        pos += ctx->itemProps[assoc].size;
+        break;
+      case ATOM('c', 'o', 'l', 'r'):
+        {
+          StringInfo
+            *profile;
 
-    pos += ctx->itemProps[assoc].size;
+          if (ctx->itemProps[assoc].size < 16)
+              continue;
+
+          profile=BlobToStringInfo(ctx->itemProps[assoc].data + 4, ctx->itemProps[assoc].size - 4);
+          (void) SetImageProfile(image, "icc", profile, exception);
+          profile=DestroyStringInfo(profile);
+          break;
+        }
+    }
   }
 
   buffer = AcquireMagickMemory(ctx->itemInfo[id].size);
@@ -903,61 +1060,71 @@ static MagickBooleanType decodeH265Image(Image *image, HEICImageContext *ctx, un
         resized_chroma = DestroyImage(resized_chroma);
 
       more = 0;
+      de265_release_next_picture(ctx->h265Ctx);
       break;
 
 err_loop_free:
       if (resized_chroma)
         resized_chroma = DestroyImage(resized_chroma);
 
+      de265_release_next_picture(ctx->h265Ctx);
+
       goto err_out_free;
     }
   } while (more);
 
+  de265_reset(ctx->h265Ctx);
+  buffer = RelinquishMagickMemory(buffer);
   return MagickTrue;
 
 err_out_free:
+  de265_reset(ctx->h265Ctx);
+  buffer = RelinquishMagickMemory(buffer);
   ThrowFileException(exception, CorruptImageError,"Bad image: error decoding h265", __func__);
-  RelinquishMagickMemory(buffer);
   return MagickFalse;
 }
 
 /*
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %                                                                             %
-   %                                                                             %
-   %                                                                             %
-   %   R e a d H E I C I m a g e                                                 %
-   %                                                                             %
-   %                                                                             %
-   %                                                                             %
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %
-   %  ReadWEBPImage() reads an image in the WebP image format.
-   %
-   %  The format of the ReadWEBPImage method is:
-   %
-   %      Image *ReadWEBPImage(const ImageInfo *image_info,
-   %        ExceptionInfo *exception)
-   %
-   %  A description of each parameter follows:
-   %
-   %    o image_info: the image info.
-   %
-   %    o exception: return any errors or warnings in this structure.
-   %
-   */
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%   R e a d H E I C I m a g e                                                 %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  ReadHEICImage retrieves an image via a file descriptor, decodes the image,
+%  and returns it.  It allocates the memory necessary for the new Image
+%  structure and returns a pointer to the new image.
+%
+%  The format of the ReadHEICImage method is:
+%
+%      Image *ReadHEICImage(const ImageInfo *image_info,
+%        ExceptionInfo *exception)
+%
+%  A description of each parameter follows:
+%
+%    o image_info: the image info.
+%
+%    o exception: return any errors or warnings in this structure.
+%
+*/
 static Image *ReadHEICImage(const ImageInfo *image_info,
-    ExceptionInfo *exception)
+  ExceptionInfo *exception)
 {
   Image
     *image;
 
+  Image
+    *cropped = NULL;
+
   MagickBooleanType
     status;
 
-  //char
-  //    buffer[BUFFER_SIZE];
+  RectangleInfo
+      crop_info;
 
   MagickSizeType
     length;
@@ -969,14 +1136,16 @@ static Image *ReadHEICImage(const ImageInfo *image_info,
   HEICImageContext
     ctx;
 
+  ResetMagickMemory(&ctx, 0, sizeof(ctx));
+
   /*
-     Open image file.
-     */
+    Open image file.
+  */
   assert(image_info != (const ImageInfo *) NULL);
   assert(image_info->signature == MagickCoreSignature);
   if (image_info->debug != MagickFalse)
     (void) LogMagickEvent(TraceEvent,GetMagickModule(),"%s",
-        image_info->filename);
+      image_info->filename);
   assert(exception != (ExceptionInfo *) NULL);
   assert(exception->signature == MagickCoreSignature);
   image=AcquireImage(image_info,exception);
@@ -986,63 +1155,40 @@ static Image *ReadHEICImage(const ImageInfo *image_info,
     image=DestroyImageList(image);
     return((Image *) NULL);
   }
-  if (!IsBlobSeekable(image))
-    ThrowReaderException(CorruptImageError,"Only seekable sources are supported");
 
-  ResetMagickMemory(&ctx, 0, sizeof(ctx));
+  if (!IsBlobSeekable(image)) {
+    ThrowFileException(exception,CorruptImageError,"Only seekable sources are supported","ReadHEIC");
+    goto cleanup;
+  }
 
   length=GetBlobSize(image);
   count = MAX_ATOMS_IN_BOX;
   while (length && ctx.finished == MagickFalse && count--)
   {
-    length = ParseAtom(image, length, &ctx, exception);
+    length = ParseRootAtom(image, length, &ctx, exception);
     if (length == (MagickSizeType)-1) {
-      ThrowReaderException(CorruptImageError,"Unable To Decode Image File");
+      ThrowFileException(exception,CorruptImageError,"Unable To Decode Image File","ReadHEIC");
+      goto cleanup;
     }
   }
 
   if (ctx.finished != MagickTrue) {
-    ThrowReaderException(CorruptImageError,"Unable To Decode Image File");
+    ThrowFileException(exception,CorruptImageError,"Unable To Decode Image File","ReadHEIC");
+    goto cleanup;
   }
 
-  /* find exif if present */
-  ctx.exif = NULL;
-  ctx.exifSize = 0;
-  for(int i = 0; i <= ctx.idsCount; i++) {
-    if(ctx.itemInfo[i].type == ATOM('E', 'x', 'i', 'f')) {
-      ssize_t count;
-      ctx.exifSize = ctx.itemInfo[i].size;
-      ctx.exif = AcquireMagickMemory(ctx.exifSize);
-      SeekBlob(image, ctx.itemInfo[i].offset, SEEK_SET);
-      count = ReadBlob(image, ctx.exifSize, ctx.exif);
-      if (count != ctx.exifSize) {
-        ThrowReaderException(CorruptImageError,"Unable To Find Exif Data");
-      }
-      break;
-    }
-  }
-
-  if(ctx.exif != NULL) {
-    StringInfo
-      *profile;
-    
-    profile = BlobToStringInfo((const void *)ctx.exif, ctx.exifSize);
-    if (profile != (StringInfo *) NULL) {
-      (void) SetImageProfile(image, "exif", profile, exception);    
-      profile = DestroyStringInfo(profile);
-    }
-  }    
-  
   /*
      Initialize h265 decoder
-     */
+  */
   ctx.h265Ctx = de265_new_decoder();
   if (ctx.h265Ctx == NULL) {
-    ThrowReaderException(CorruptImageError,"Unable To Initialize Decoder");
+    ThrowFileException(exception,CorruptImageError,"Unable To Initialize Decoder","ReadHEIC");
+    goto cleanup;
   }
 
   if (decodeGrid(&ctx, exception) != MagickTrue) {
-    ThrowReaderException(CorruptImageError,"Unable to decode image grid");
+    ThrowFileException(exception,CorruptImageError,"Unable to decode image grid","ReadHEIC");
+    goto cleanup;
   }
 
   count = (ctx.grid.rowsMinusOne + 1) * (ctx.grid.columnsMinusOne + 1);
@@ -1053,7 +1199,8 @@ static Image *ReadHEICImage(const ImageInfo *image_info,
 
   ctx.tmp = CloneImage(image, 256, 256, MagickTrue, exception);
   if (ctx.tmp == NULL) {
-    ThrowReaderException(CorruptImageError,"Unable to clone image");
+    ThrowFileException(exception,CorruptImageError,"Unable to clone image","ReadHEIC");
+    goto cleanup;
   }
 
   DuplicateBlob(ctx.tmp, image);
@@ -1062,72 +1209,183 @@ static Image *ReadHEICImage(const ImageInfo *image_info,
     decodeH265Image(image, &ctx, i+1, exception);
   }
 
-  SetImageColorspace(image, YCbCrColorspace, exception);
 
-  return image;
+  crop_info.x = 0;
+  crop_info.y = 0;
+
+  for (i = 0; i < ctx.itemInfo[ctx.grid.id].assocsCount; i++) {
+    size_t
+      assoc;
+
+    assoc = ctx.itemInfo[ctx.grid.id].assocs[i] & 0x7f;
+    if (assoc > ctx.itemPropsCount) {
+      ThrowFileException(exception,CorruptImageError,"Bad image: incorrect item property index","ReadHEIC");
+      goto cleanup;
+    }
+
+    switch (ctx.itemProps[assoc].type) {
+      case ATOM('i', 's', 'p', 'e'):
+        if (ctx.itemProps[assoc].size < 12) {
+          ThrowReaderException(CorruptImageError,"Bad image: ispe atom is too short");
+        }
+        crop_info.width = readInt(ctx.itemProps[assoc].data+4);
+        crop_info.height = readInt(ctx.itemProps[assoc].data+8);
+        break;
+
+      case ATOM('i', 'r', 'o', 't'):
+        {
+          char *value;
+
+          if (ctx.itemProps[assoc].size < 1) {
+            ThrowReaderException(CorruptImageError,"Bad image: ispe atom is too short");
+          }
+
+          switch (ctx.itemProps[assoc].data[0])
+          {
+            case 0:
+              image->orientation = TopLeftOrientation;
+              value = "1";
+              break;
+            case 1:
+              image->orientation = RightTopOrientation;
+              value = "8";
+              break;
+            case 2:
+              image->orientation = BottomRightOrientation;
+              value = "3";
+              break;
+            case 3:
+              image->orientation = LeftTopOrientation;
+              value = "6";
+              break;
+            default:
+              value = "1";
+          }
+
+          SetImageProperty(image, "exif:Orientation", value, exception);
+        }
+        break;
+    }
+  }
+
+  for (i = 1; i <= ctx.idsCount; i++) {
+    unsigned char
+      *buffer = NULL;
+
+    StringInfo
+      *profile;
+
+    HEICItemInfo
+      *info = &ctx.itemInfo[i];
+
+    if (info->type != ATOM('E','x','i','f'))
+      continue;
+
+    buffer = AcquireMagickMemory(info->size);
+    if (buffer == NULL) {
+      ThrowFileException(exception, CorruptImageError,"Bad image: unable to allocate memory", "ReadHEIC");
+      goto cleanup;
+    }
+
+    SeekBlob(image, info->offset+4, SEEK_SET);
+    count = ReadBlob(image, info->size-4, buffer);
+    profile=BlobToStringInfo(buffer, count);
+    SetImageProfile(image, "exif", profile, exception);
+
+    profile = DestroyStringInfo(profile);
+    RelinquishMagickMemory(buffer);
+  }
+
+  cropped = CropImage(image, &crop_info, exception);
+  image = DestroyImage(image);
+
+  if (cropped != NULL)
+    SetImageColorspace(cropped, YCbCrColorspace, exception);
+
+cleanup:
+  if (image) {
+    image = DestroyImage(image);
+  }
+  if (ctx.h265Ctx) {
+      de265_free_decoder(ctx.h265Ctx);
+  }
+  if (ctx.tmp) {
+      ctx.tmp = DestroyImage(ctx.tmp);
+  }
+  if (ctx.idat) {
+      ctx.idat = RelinquishMagickMemory(ctx.idat);
+  }
+  if (ctx.itemInfo) {
+      ctx.itemInfo = RelinquishMagickMemory(ctx.itemInfo);
+  }
+  for (i = 1; i <= ctx.itemPropsCount; i++) {
+      if (ctx.itemProps[i].data) {
+          ctx.itemProps[i].data = RelinquishMagickMemory(ctx.itemProps[i].data);
+      }
+  }
+  return cropped;
 }
 #endif
 
 /*
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %                                                                             %
-   %                                                                             %
-   %                                                                             %
-   %   R e g i s t e r H E I C I m a g e                                         %
-   %                                                                             %
-   %                                                                             %
-   %                                                                             %
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %
-   %  RegisterImage() adds attributes for the Heic image format to
-   %  the list of supported formats.  The attributes include the image format
-   %  tag, a method to read and/or write the format, whether the format
-   %  supports the saving of more than one frame to the same file or blob,
-   %  whether the format supports native in-memory I/O, and a brief
-   %  description of the format.
-   %
-   %  The format of the RegisterHEICImage method is:
-   %
-   %      size_t RegisterHEICImage(void)
-   %
-   */
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%   R e g i s t e r H E I C I m a g e                                         %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  RegisterHEICImage() adds attributes for the HEIC image format to the list of
+%  supported formats.  The attributes include the image format tag, a method
+%  to read and/or write the format, whether the format supports the saving of
+%  more than one frame to the same file or blob, whether the format supports
+%  native in-memory I/O, and a brief description of the format.
+%
+%  The format of the RegisterHEICImage method is:
+%
+%      size_t RegisterHEICImage(void)
+%
+*/
 ModuleExport size_t RegisterHEICImage(void)
 {
   MagickInfo
     *entry;
 
-  entry=AcquireMagickInfo("HEIC", "HEIC", "Apple High efficiency Image Format");
+  entry=AcquireMagickInfo("HEIC","HEIC","Apple High efficiency Image Format");
 #if defined(MAGICKCORE_HEIC_DELEGATE)
   entry->decoder=(DecodeImageHandler *) ReadHEICImage;
+  // entry->encoder=(EncodeImageHandler *) WriteHEICImage;
 #endif
-  entry->description=ConstantString("Heic Image Format");
-  entry->mime_type=ConstantString("image/x-heic");
-  entry->module=ConstantString("HEIC");
-  entry->flags^=CoderAdjoinFlag;
   entry->magick=(IsImageFormatHandler *) IsHEIC;
+  entry->mime_type=ConstantString("image/x-heic");
+  entry->flags|=CoderDecoderSeekableStreamFlag;
+  entry->flags^=CoderAdjoinFlag;
   (void) RegisterMagickInfo(entry);
   return(MagickImageCoderSignature);
 }
 
 /*
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %                                                                             %
-   %                                                                             %
-   %                                                                             %
-   %   U n r e g i s t e r H E I C I m a g e                                     %
-   %                                                                             %
-   %                                                                             %
-   %                                                                             %
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %
-   %  UnregisterHEICImage() removes format registrations made by the Heic module
-   %  from the list of supported formats.
-   %
-   %  The format of the UnregisterHEICImage method is:
-   %
-   %      UnregisterHEICImage(void)
-   %
-   */
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%   U n r e g i s t e r H E I C I m a g e                                     %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  UnregisterHEICImage() removes format registrations made by the HEIC module
+%  from the list of supported formats.
+%
+%  The format of the UnregisterHEICImage method is:
+%
+%      UnregisterHEICImage(void)
+%
+*/
 ModuleExport void UnregisterHEICImage(void)
 {
   (void) UnregisterMagickInfo("HEIC");

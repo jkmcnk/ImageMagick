@@ -17,7 +17,7 @@
 %                                 March 2000                                  %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -88,6 +88,9 @@
 #include "MagickCore/utility-private.h"
 
 #if defined(MAGICKCORE_OPENCL_SUPPORT)
+#if defined(MAGICKCORE_LTDL_DELEGATE)
+#include "ltdl.h"
+#endif
 
 #ifndef MAGICKCORE_WINDOWS_SUPPORT
 #include <dlfcn.h>
@@ -476,6 +479,11 @@ MagickPrivate void ReleaseOpenCLKernel(cl_kernel kernel)
 MagickPrivate void ReleaseOpenCLMemObject(cl_mem memobj)
 {
   (void) openCL_library->clReleaseMemObject(memobj);
+}
+
+MagickPrivate void RetainOpenCLMemObject(cl_mem memobj)
+{
+  (void) openCL_library->clRetainMemObject(memobj);
 }
 
 MagickPrivate cl_int SetOpenCLKernelArg(cl_kernel kernel,size_t arg_index,
@@ -1364,7 +1372,7 @@ static MagickBooleanType CompileOpenCLKernel(MagickCLDevice device,
   }
   (void) FormatLocaleString(filename,MagickPathExtent,
     "%s%s%s_%s_%08x_%.20g.bin",GetOpenCLCacheDirectory(),
-    DirectorySeparator,"magick_opencl",deviceName,signature,
+    DirectorySeparator,"magick_opencl",deviceName,(unsigned int) signature,
     (double) sizeof(char*)*8);
   loaded=LoadCachedOpenCLKernel(device,filename);
   if (loaded == MagickFalse)
@@ -2460,6 +2468,7 @@ static MagickBooleanType BindOpenCLFunctions()
 
   BIND(clCreateBuffer);
   BIND(clReleaseMemObject);
+  BIND(clRetainMemObject);
 
   BIND(clCreateContext);
   BIND(clReleaseContext);
@@ -2885,7 +2894,6 @@ static void CL_API_CALL DestroyMagickCLCacheInfoAndPixels(
       }
   }
   pixels=info->pixels;
-  RelinquishMagickResource(MemoryResource,info->length);
   DestroyMagickCLCacheInfo(info);
   (void) RelinquishAlignedMemory(pixels);
 }

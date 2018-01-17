@@ -16,7 +16,7 @@
 %                               October 1998                                  %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -2172,7 +2172,6 @@ MagickExport void GetPixelInfo(const Image *image,PixelInfo *pixel)
   pixel->alpha=(double) OpaqueAlpha;
   pixel->index=0.0;
   pixel->count=0;
-  pixel->fuzz=0.0;
   if (image == (const Image *) NULL)
     return;
   pixel->storage_class=image->storage_class;

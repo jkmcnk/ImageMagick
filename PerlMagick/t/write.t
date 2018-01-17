@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-#  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization
+#  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization
 #  dedicated to making software imaging solutions freely available.
 #
 #  You may not use this file except in compliance with the License.  You may
@@ -29,7 +29,7 @@ print("AVS X image file ...\n");
 testReadWrite( 'AVS:input.avs',
   'AVS:output.avs',
   q//,
-  'f7b3db46d6f696ea8392f0ad0be945dd502a806e2c1e9c082efef517191758f7');
+  '646ac633d5b5553721e032d2c9f8f54ffc19d315832bbf808c2b7321b1067293');
 
 print("Microsoft Windows bitmap image file ...\n");
 ++$test;

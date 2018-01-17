@@ -15,7 +15,7 @@
 %                              Anthony Thyssen                                %
 %                                 April 2011                                  %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -280,6 +280,9 @@ WandExport MagickBooleanType CLILogEvent(MagickCLI *cli_wand,
 
   va_list
     operands;
+
+  if (IsEventLogging() == MagickFalse)
+    return(MagickFalse);
 
   /* HACK - prepend the CLI location to format string.
      The better way would be add more arguments to to the 'va' oparands

@@ -17,7 +17,7 @@
 %                                 July 1992                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -118,7 +118,7 @@ static MagickBooleanType IsTXT(const unsigned char *magick,const size_t length)
     return(MagickFalse);
   if (LocaleNCompare((const char *) magick,MagickID,strlen(MagickID)) != 0)
     return(MagickFalse);
-  count=(ssize_t) sscanf((const char *) magick+32,"%lu,%lu,%lu,%s",&columns,
+  count=(ssize_t) sscanf((const char *) magick+32,"%lu,%lu,%lu,%32s",&columns,
     &rows,&depth,colorspace);
   if (count != 4)
     return(MagickFalse);
@@ -440,7 +440,7 @@ static Image *ReadTXTImage(const ImageInfo *image_info,ExceptionInfo *exception)
     height=0;
     max_value=0;
     *colorspace='\0';
-    count=(ssize_t) sscanf(text+32,"%lu,%lu,%lu,%s",&width,&height,&max_value,
+    count=(ssize_t) sscanf(text+32,"%lu,%lu,%lu,%32s",&width,&height,&max_value,
       colorspace);
     if ((count != 4) || (width == 0) || (height == 0) || (max_value == 0))
       ThrowReaderException(CorruptImageError,"ImproperImageHeader");
@@ -565,12 +565,6 @@ static Image *ReadTXTImage(const ImageInfo *image_info,ExceptionInfo *exception)
           break;
       }
     }
-    if (EOFBlob(image) != MagickFalse)
-      {
-        ThrowFileException(exception,CorruptImageError,"UnexpectedEndOfFile",
-          image->filename);
-        break;
-      }
     (void) ReadBlobString(image,text);
     if (LocaleNCompare((char *) text,MagickID,strlen(MagickID)) == 0)
       {

@@ -762,7 +762,8 @@
 /* Define if you have LQR library */
 #undef LQR_DELEGATE
 
-/* Define if using libltdl to support dynamically loadable modules */
+/* Define if using libltdl to support dynamically loadable modules and OpenCL
+   */
 #undef LTDL_DELEGATE
 
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
@@ -791,6 +792,9 @@
 
 /* Magick API method prefix */
 #undef NAMESPACE_PREFIX
+
+/* Magick API method prefix tag */
+#undef NAMESPACE_PREFIX_TAG
 
 /* Define to 1 if assertions should be disabled. */
 #undef NDEBUG
@@ -971,6 +975,9 @@
 
 /* Version number of package */
 #undef VERSION
+
+/* Define if you have WEBPMUX library */
+#undef WEBPMUX_DELEGATE
 
 /* Define if you have WEBP library */
 #undef WEBP_DELEGATE

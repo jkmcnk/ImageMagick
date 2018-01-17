@@ -17,7 +17,7 @@
 %                                 July 1992                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -3476,7 +3476,7 @@ static MagickBooleanType WriteTIFFImage(const ImageInfo *image_info,
       compression=image->compression;
     if (image_info->compression != UndefinedCompression)
       compression=image_info->compression;
-    switch (compression)
+    switch (image_info->compression)
     {
       case FaxCompression:
       case Group4Compression:

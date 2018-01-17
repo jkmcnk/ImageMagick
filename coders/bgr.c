@@ -17,7 +17,7 @@
 %                                 July 1992                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -223,6 +223,8 @@ static Image *ReadBGRImage(const ImageInfo *image_info,
             length=GetQuantumExtent(canvas_image,quantum_info,quantum_type);
             pixels=(const unsigned char *) ReadBlobStream(image,length,
               GetQuantumPixels(quantum_info),&count);
+            if (count != (ssize_t) length)
+              break;
           }
         for (y=0; y < (ssize_t) image->extract_info.height; y++)
         {
@@ -282,6 +284,8 @@ static Image *ReadBGRImage(const ImageInfo *image_info,
             }
           pixels=(const unsigned char *) ReadBlobStream(image,length,
             GetQuantumPixels(quantum_info),&count);
+          if (count != (ssize_t) length)
+            break;
         }
         break;
       }
@@ -304,6 +308,8 @@ static Image *ReadBGRImage(const ImageInfo *image_info,
             length=GetQuantumExtent(canvas_image,quantum_info,RedQuantum);
             pixels=(const unsigned char *) ReadBlobStream(image,length,
               GetQuantumPixels(quantum_info),&count);
+            if (count != (ssize_t) length)
+              break;
           }
         for (y=0; y < (ssize_t) image->extract_info.height; y++)
         {
@@ -383,6 +389,8 @@ static Image *ReadBGRImage(const ImageInfo *image_info,
               }
             pixels=(const unsigned char *) ReadBlobStream(image,length,
               GetQuantumPixels(quantum_info),&count);
+            if (count != (ssize_t) length)
+              break;
           }
           if (image->previous == (Image *) NULL)
             {
@@ -404,6 +412,8 @@ static Image *ReadBGRImage(const ImageInfo *image_info,
             length=GetQuantumExtent(canvas_image,quantum_info,RedQuantum);
             pixels=(const unsigned char *) ReadBlobStream(image,length,
               GetQuantumPixels(quantum_info),&count);
+            if (count != (ssize_t) length)
+              break;
           }
         for (y=0; y < (ssize_t) image->extract_info.height; y++)
         {
@@ -451,6 +461,8 @@ static Image *ReadBGRImage(const ImageInfo *image_info,
             }
           pixels=(const unsigned char *) ReadBlobStream(image,length,
             GetQuantumPixels(quantum_info),&count);
+          if (count != (ssize_t) length)
+            break;
         }
         if (image->previous == (Image *) NULL)
           {
@@ -504,6 +516,8 @@ static Image *ReadBGRImage(const ImageInfo *image_info,
            }
           pixels=(const unsigned char *) ReadBlobStream(image,length,
             GetQuantumPixels(quantum_info),&count);
+          if (count != (ssize_t) length)
+            break;
         }
         if (image->previous == (Image *) NULL)
           {
@@ -557,6 +571,8 @@ static Image *ReadBGRImage(const ImageInfo *image_info,
             }
           pixels=(const unsigned char *) ReadBlobStream(image,length,
             GetQuantumPixels(quantum_info),&count);
+          if (count != (ssize_t) length)
+            break;
         }
         if (image->previous == (Image *) NULL)
           {
@@ -619,6 +635,8 @@ static Image *ReadBGRImage(const ImageInfo *image_info,
                 }
               pixels=(const unsigned char *) ReadBlobStream(image,length,
                 GetQuantumPixels(quantum_info),&count);
+              if (count != (ssize_t) length)
+                break;
             }
             if (image->previous == (Image *) NULL)
               {
@@ -666,6 +684,8 @@ static Image *ReadBGRImage(const ImageInfo *image_info,
           }
         pixels=(const unsigned char *) ReadBlobStream(image,length,
           GetQuantumPixels(quantum_info),&count);
+        if (count != (ssize_t) length)
+          break;
         for (y=0; y < (ssize_t) image->extract_info.height; y++)
         {
           register const Quantum
@@ -712,6 +732,8 @@ static Image *ReadBGRImage(const ImageInfo *image_info,
             }
           pixels=(const unsigned char *) ReadBlobStream(image,length,
             GetQuantumPixels(quantum_info),&count);
+          if (count != (ssize_t) length)
+            break;
         }
         if (image->previous == (Image *) NULL)
           {
@@ -743,6 +765,8 @@ static Image *ReadBGRImage(const ImageInfo *image_info,
           }
         pixels=(const unsigned char *) ReadBlobStream(image,length,
           GetQuantumPixels(quantum_info),&count);
+        if (count != (ssize_t) length)
+          break;
         for (y=0; y < (ssize_t) image->extract_info.height; y++)
         {
           register const Quantum
@@ -789,6 +813,8 @@ static Image *ReadBGRImage(const ImageInfo *image_info,
            }
           pixels=(const unsigned char *) ReadBlobStream(image,length,
             GetQuantumPixels(quantum_info),&count);
+          if (count != (ssize_t) length)
+            break;
         }
         if (image->previous == (Image *) NULL)
           {
@@ -820,6 +846,8 @@ static Image *ReadBGRImage(const ImageInfo *image_info,
           }
         pixels=(const unsigned char *) ReadBlobStream(image,length,
           GetQuantumPixels(quantum_info),&count);
+        if (count != (ssize_t) length)
+          break;
         for (y=0; y < (ssize_t) image->extract_info.height; y++)
         {
           register const Quantum
@@ -866,6 +894,8 @@ static Image *ReadBGRImage(const ImageInfo *image_info,
            }
           pixels=(const unsigned char *) ReadBlobStream(image,length,
             GetQuantumPixels(quantum_info),&count);
+          if (count != (ssize_t) length)
+            break;
         }
         if (image->previous == (Image *) NULL)
           {
@@ -899,6 +929,8 @@ static Image *ReadBGRImage(const ImageInfo *image_info,
               }
             pixels=(const unsigned char *) ReadBlobStream(image,length,
               GetQuantumPixels(quantum_info),&count);
+            if (count != (ssize_t) length)
+              break;
             for (y=0; y < (ssize_t) image->extract_info.height; y++)
             {
               register const Quantum
@@ -945,6 +977,8 @@ static Image *ReadBGRImage(const ImageInfo *image_info,
                }
               pixels=(const unsigned char *) ReadBlobStream(image,length,
                 GetQuantumPixels(quantum_info),&count);
+              if (count != (ssize_t) length)
+                break;
             }
             if (image->previous == (Image *) NULL)
               {

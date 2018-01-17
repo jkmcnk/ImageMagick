@@ -18,7 +18,7 @@
 %                               November 1997                                 %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -1785,6 +1785,7 @@ Magick_png_read_raw_profile(png_struct *ping,Image *image,
     sp;
 
   png_uint_32
+    extent,
     length,
     nibbles;
 
@@ -1800,21 +1801,34 @@ Magick_png_read_raw_profile(png_struct *ping,Image *image,
                  13,14,15};
 
   sp=text[ii].text+1;
+  extent=text[ii].text_length;
   /* look for newline */
-  while (*sp != '\n')
-     sp++;
+  while ((*sp != '\n') && extent--)
+    sp++;
 
   /* look for length */
-  while (*sp == '\0' || *sp == ' ' || *sp == '\n')
+  while (((*sp == '\0' || *sp == ' ' || *sp == '\n')) && extent--)
      sp++;
+
+  if (extent == 0)
+    {
+      png_warning(ping,"invalid profile length");
+      return(MagickFalse);
+    }
 
   length=(png_uint_32) StringToLong(sp);
 
   (void) LogMagickEvent(CoderEvent,GetMagickModule(),
        "      length: %lu",(unsigned long) length);
 
-  while (*sp != ' ' && *sp != '\n')
-     sp++;
+  while ((*sp != ' ' && *sp != '\n') && extent--)
+    sp++;
+
+  if (extent == 0)
+    {
+      png_warning(ping,"missing profile length");
+      return(MagickFalse);
+    }
 
   /* allocate space */
   if (length == 0)
@@ -4475,7 +4489,7 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
 
     type[0]='\0';
     (void) ConcatenateMagickString(type,"errr",MagickPathExtent);
-    length=ReadBlobMSBLong(image);
+    length=(size_t) ReadBlobMSBLong(image);
     count=(unsigned int) ReadBlob(image,4,(unsigned char *) type);
 
     if (logging != MagickFalse)
@@ -4981,6 +4995,8 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
   {
     s=GetVirtualPixels(jng_image,0,y,image->columns,1,exception);
     q=GetAuthenticPixels(image,0,y,image->columns,1,exception);
+    if ((s == (const Quantum *)  NULL) || (q == (Quantum *) NULL))
+      break;
     for (x=(ssize_t) image->columns; x != 0; x--)
     {
       SetPixelRed(image,GetPixelRed(jng_image,s),q);
@@ -5023,9 +5039,10 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
       if (jng_image != (Image *) NULL)
         for (y=0; y < (ssize_t) image->rows; y++)
         {
-          s=GetVirtualPixels(jng_image,0,y,image->columns,1,
-            exception);
+          s=GetVirtualPixels(jng_image,0,y,image->columns,1,exception);
           q=GetAuthenticPixels(image,0,y,image->columns,1,exception);
+          if ((s == (const Quantum *)  NULL) || (q == (Quantum *) NULL))
+            break;
 
           if (image->alpha_trait != UndefinedPixelTrait)
             for (x=(ssize_t) image->columns; x != 0; x--)
@@ -5377,7 +5394,7 @@ static Image *ReadOneMNGImage(MngInfo* mng_info, const ImageInfo *image_info,
         */
         type[0]='\0';
         (void) ConcatenateMagickString(type,"errr",MagickPathExtent);
-        length=ReadBlobMSBLong(image);
+        length=(size_t) ReadBlobMSBLong(image);
         count=(size_t) ReadBlob(image,4,(unsigned char *) type);
 
         if (logging != MagickFalse)
@@ -6850,7 +6867,8 @@ static Image *ReadOneMNGImage(MngInfo* mng_info, const ImageInfo *image_info,
                      {
                        q=GetAuthenticPixels(image,0,y,image->columns,1,
                           exception);
-
+                       if (q == (Quantum *) NULL)
+                         break;
                        for (x=(ssize_t) image->columns-1; x >= 0; x--)
                        {
                           SetPixelRed(image,ScaleQuantumToShort(
@@ -6958,6 +6976,8 @@ static Image *ReadOneMNGImage(MngInfo* mng_info, const ImageInfo *image_info,
                     n=next;
                     q=GetAuthenticPixels(large_image,0,yy,large_image->columns,
                       1,exception);
+                    if (q == (Quantum *) NULL)
+                      break;
                     q+=(large_image->columns-image->columns)*
                       GetPixelChannels(large_image);
 
@@ -7108,6 +7128,8 @@ static Image *ReadOneMNGImage(MngInfo* mng_info, const ImageInfo *image_info,
                     *pixels;
 
                   q=GetAuthenticPixels(image,0,y,image->columns,1,exception);
+                  if (q == (Quantum *) NULL)
+                    break;
                   pixels=q+(image->columns-length)*GetPixelChannels(image);
                   n=pixels+GetPixelChannels(image);
 
@@ -7247,6 +7269,8 @@ static Image *ReadOneMNGImage(MngInfo* mng_info, const ImageInfo *image_info,
                    {
                      q=GetAuthenticPixels(image,0,y,image->columns,1,
                        exception);
+                     if (q == (Quantum *) NULL)
+                       break;
 
                      for (x=(ssize_t) image->columns-1; x >= 0; x--)
                      {
@@ -11703,34 +11727,39 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                   chunk[4],
                   *data;
 
-               StringInfo
-                 *ping_profile;
+                StringInfo
+                  *ping_profile;
 
-               (void) LogMagickEvent(CoderEvent,GetMagickModule(),
-                  "  Have eXIf profile");
+                (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+                    "  Have eXIf profile");
 
-               ping_profile=CloneStringInfo(profile);
-               data=GetStringInfoDatum(ping_profile),
-               length=(png_uint_32) GetStringInfoLength(ping_profile);
+                ping_profile=CloneStringInfo(profile);
+                data=GetStringInfoDatum(ping_profile),
+                length=(png_uint_32) GetStringInfoLength(ping_profile);
 
-               PNGType(chunk,mng_eXIf);
-               if (length < 7)
-                 {
-                   ping_profile=DestroyStringInfo(ping_profile);
-                   break;  /* otherwise crashes */
-                 }
+                PNGType(chunk,mng_eXIf);
+                if (length < 7)
+                  {
+                    ping_profile=DestroyStringInfo(ping_profile);
+                    break;  /* otherwise crashes */
+                  }
 
-               /* skip the "Exif\0\0" JFIF Exif Header ID */
-               length -= 6;
+                if (*data == 'E' && *(data+1) == 'x' && *(data+2) == 'i' &&
+                    *(data+3) == 'f' && *(data+4) == '\0' && *(data+5) == '\0')
+                  {
+                    /* skip the "Exif\0\0" JFIF Exif Header ID */
+                    length -= 6;
+                    data += 6;
+                  }
 
-               LogPNGChunk(logging,chunk,length);
-               (void) WriteBlobMSBULong(image,length);
-               (void) WriteBlob(image,4,chunk);
-               (void) WriteBlob(image,length,data+6);
-               (void) WriteBlobMSBULong(image,crc32(crc32(0,chunk,4),
-                 data+6, (uInt) length));
-               ping_profile=DestroyStringInfo(ping_profile);
-               break;
+                LogPNGChunk(logging,chunk,length);
+                (void) WriteBlobMSBULong(image,length);
+                (void) WriteBlob(image,4,chunk);
+                (void) WriteBlob(image,length,data);
+                (void) WriteBlobMSBULong(image,crc32(crc32(0,chunk,4), data,
+                  (uInt) length));
+                ping_profile=DestroyStringInfo(ping_profile);
+                break;
              }
          }
        name=GetNextImageProfile(image);
@@ -12706,7 +12735,8 @@ static MagickBooleanType WriteOneJNGImage(MngInfo *mng_info,
 
   jng_quality=image_info->quality == 0UL ? 75UL : image_info->quality%1000;
 
-  jng_alpha_compression_method=image->compression==JPEGCompression? 8 : 0;
+  jng_alpha_compression_method=(image->compression==JPEGCompression ||
+    image_info->compression==JPEGCompression) ? 8 : 0;
 
   jng_alpha_quality=image_info->quality == 0UL ? 75UL :
       image_info->quality;

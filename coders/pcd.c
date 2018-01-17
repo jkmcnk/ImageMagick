@@ -17,7 +17,7 @@
 %                                 July 1992                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -1117,7 +1117,11 @@ static MagickBooleanType WritePCDImage(const ImageInfo *image_info,Image *image,
   */
   status=OpenBlob(image_info,pcd_image,WriteBinaryBlobMode,exception);
   if (status == MagickFalse)
-    return(status);
+    {
+      if (pcd_image != image)
+        pcd_image=DestroyImage(pcd_image);
+      return(status);
+    }
   if (IssRGBCompatibleColorspace(pcd_image->colorspace) == MagickFalse)
     (void) TransformImageColorspace(pcd_image,sRGBColorspace,exception);
   /*

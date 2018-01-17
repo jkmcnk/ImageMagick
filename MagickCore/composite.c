@@ -17,7 +17,7 @@
 %                                 July 1992                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -1532,9 +1532,6 @@ MagickExport MagickBooleanType CompositeImage(Image *image,
         PixelTrait source_traits=GetPixelChannelTraits(source_image,channel);
         if (traits == UndefinedPixelTrait)
           continue;
-        if ((source_traits == UndefinedPixelTrait) &&
-            (channel != AlphaPixelChannel))
-            continue;
         if (channel == AlphaPixelChannel)
           {
             /*
@@ -1642,6 +1639,11 @@ MagickExport MagickBooleanType CompositeImage(Image *image,
                 pixel=QuantumRange*Da;
                 break;
               }
+              case MultiplyCompositeOp:
+              {
+                pixel=QuantumRange*Sa*Da;
+                break;
+              }
               default:
               {
                 pixel=QuantumRange*alpha;
@@ -1652,6 +1654,8 @@ MagickExport MagickBooleanType CompositeImage(Image *image,
               ClampToQuantum(pixel);
             continue;
           }
+        if (source_traits == UndefinedPixelTrait)
+          continue;
         /*
           Sc: source color.
           Dc: canvas color.
@@ -1663,7 +1667,7 @@ MagickExport MagickBooleanType CompositeImage(Image *image,
             /*
               Copy channel.
             */
-            q[i]=Sc;
+            q[i]=Dc;
             continue;
           }
         /*
@@ -2262,6 +2266,12 @@ MagickExport MagickBooleanType CompositeImage(Image *image,
               }
             pixel=QuantumRange*gamma*(Dca*Sa+Da*(2.0*Sca-Sa)*(pow((Dca/Da),0.5)-
               (Dca/Da))+Sca*(1.0-Da)+Dca*(1.0-Sa));
+            break;
+          }
+          case StereoCompositeOp:
+          {
+            if (channel == RedPixelChannel)
+              pixel=(MagickRealType) GetPixelRed(source_image,p);
             break;
           }
           case ThresholdCompositeOp:

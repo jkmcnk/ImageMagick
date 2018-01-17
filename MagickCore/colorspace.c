@@ -17,7 +17,7 @@
 %                                 July 1992                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -51,6 +51,7 @@
 #include "MagickCore/colorspace-private.h"
 #include "MagickCore/exception.h"
 #include "MagickCore/exception-private.h"
+#include "MagickCore/enhance.h"
 #include "MagickCore/image.h"
 #include "MagickCore/image-private.h"
 #include "MagickCore/gem.h"
@@ -320,8 +321,8 @@ static MagickBooleanType sRGBTransformImage(Image *image,
           status=MagickFalse;
       }
       image_view=DestroyCacheView(image_view);
-      image->type=image->alpha_trait == UndefinedPixelTrait ? ColorSeparationType :
-        ColorSeparationAlphaType;
+      image->type=image->alpha_trait == UndefinedPixelTrait ?
+        ColorSeparationType : ColorSeparationAlphaType;
       if (SetImageColorspace(image,colorspace,exception) == MagickFalse)
         return(MagickFalse);
       return(status);
@@ -1281,9 +1282,8 @@ MagickExport MagickBooleanType TransformImageColorspace(Image *image,
     (void) LogMagickEvent(TraceEvent,GetMagickModule(),"%s",image->filename);
   if (image->colorspace == colorspace)
     return(SetImageColorspace(image,colorspace,exception));
-  if ((image->colorspace == GRAYColorspace) && (image->gamma != 1.0) &&
-      (colorspace == sRGBColorspace))
-    return(SetImageColorspace(image,colorspace,exception));
+  if ((image->colorspace == RGBColorspace) && (colorspace == GRAYColorspace))
+    return(GrayscaleImage(image,Rec709LuminancePixelIntensityMethod,exception));
   if (colorspace == UndefinedColorspace)
     return(SetImageColorspace(image,colorspace,exception));
   /*

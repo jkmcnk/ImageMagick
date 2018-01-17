@@ -17,7 +17,7 @@
 %                               September 2011                                %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2017 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2018 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -1329,7 +1329,7 @@ WandPrivate void CLISettingOptionInfo(MagickCLI *cli_wand,
         }
       if (LocaleCompare("seed",option+1) == 0)
         {
-          if (IsGeometry(arg1) == MagickFalse)
+          if (IfSetOption && (IsGeometry(arg1) == MagickFalse))
             CLIWandExceptArgBreak(OptionError,"InvalidArgument",option,arg1);
           SetRandomSecretKey(
                IfSetOption ? (unsigned long) StringToUnsignedLong(arg1)
